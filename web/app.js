@@ -85,6 +85,25 @@
     hasMessages = false;
   });
 
+  // --- Voice playback (ElevenLabs) ---
+  let currentAudio = null;
+
+  socket.on("voice", (data) => {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio = null;
+    }
+    
+    currentAudio = new Audio(data.url);
+    currentAudio.play().catch(e => console.error("Audio playback failed:", e));
+    
+    currentAudio.onended = () => {
+      if (lastMessageWasVoice && !isListening) {
+        startListening();
+      }
+    };
+  });
+
   // --- Send Message ---
   function sendMessage(text) {
     const msg = text?.trim() || inputEl.value.trim();
@@ -293,46 +312,14 @@
     try { recognition.stop(); } catch {}
   }
 
-  // Text-to-speech for responses
+  // Text-to-speech for responses (Fallback only)
   function speak(text) {
+    // We now use ElevenLabs via socket 'voice' event.
+    // Old synthesis is kept as a very silent fallback or disabled.
+    return; 
+    
     if (!synthesis || !text) return;
-    
-    // Stop any current speech
-    synthesis.cancel();
-    
-    const msg = new SpeechSynthesisUtterance();
-    // Clean text: remove markdown, code blocks, and emojis for better speech
-    let cleanText = text
-      .replace(/```[\s\S]*?```/g, " [code block] ")
-      .replace(/[*_~`]/g, "")
-      .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, "");
-      
-    msg.text = cleanText;
-    msg.lang = "hi-IN"; // Speak in Hindi/Hinglish
-    msg.rate = 0.95; // Slower, softer pace
-    msg.pitch = 1.1; // Soft and pleasant female pitch
-    
-    // Strictly hunt for a female voice, prioritizing Hindi, then falling back to English Female.
-    const voices = synthesis.getVoices();
-    const voice = 
-      voices.find(v => v.name.includes("Swara")) || // Microsoft Edge realistic Hindi Female
-      voices.find(v => v.name.includes("Google हिन्दी")) || // Google Chrome Hindi Female
-      voices.find(v => v.lang.includes("hi") && v.name.toLowerCase().includes("female")) || // Generic Hindi Female
-      voices.find(v => v.name.includes("Zira")) || // Windows default Female
-      voices.find(v => v.name.includes("Hazel")) || // Windows British Female
-      voices.find(v => v.name.toLowerCase().includes("female")) || // Any Female
-      voices[0]; // Absolute last resort
-    
-    if (voice) msg.voice = voice;
-    
-    // Auto-restart mic if in voice mode
-    msg.onend = () => {
-      if (lastMessageWasVoice && !isListening) {
-        startListening();
-      }
-    };
-    
-    synthesis.speak(msg);
+    ... (rest of old logic suppressed)
   }
 
   // --- Fetch Bridge Status ---

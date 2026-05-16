@@ -6,6 +6,8 @@ import { fileURLToPath } from "url";
 import { LLMEngine } from "../core/llm.js";
 import { getHistory, addMessage, clearHistory, getStats } from "../core/memory.js";
 import { getRandomGreeting, SERVICE_CONNECT_MESSAGES } from "../core/personality.js";
+import { generateTTS } from "../core/tts.js";
+import path from "path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -25,6 +27,7 @@ export class WebBridge {
 
     // Serve static files
     this.app.use(express.static(join(__dirname, "..", "..", "web")));
+    this.app.use("/temp", express.static(join(process.cwd(), "data", "temp")));
     this.app.use(express.json());
 
     // API: Health check
@@ -86,6 +89,13 @@ export class WebBridge {
             content: fullResponse,
             timestamp: new Date().toISOString(),
           });
+
+          // Generate voice for the response
+          const audioPath = await generateTTS(fullResponse);
+          if (audioPath) {
+            const fileName = path.basename(audioPath);
+            socket.emit("voice", { url: `/temp/${fileName}` });
+          }
         } catch (error) {
           socket.emit("stream_end", {
             role: "assistant",
