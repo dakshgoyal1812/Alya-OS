@@ -141,7 +141,13 @@ export class LLMEngine {
         messages.push(msg); // Add assistant's tool call message
         
         for (const tc of msg.tool_calls) {
-          const args = JSON.parse(tc.function.arguments || "{}");
+          let args = {};
+          try {
+            args = JSON.parse(tc.function.arguments || "{}");
+          } catch (e) {
+            console.warn("⚠️ Failed to parse tool arguments:", tc.function.arguments);
+            args = {};
+          }
           const result = await executeTool(tc.function.name, args);
           messages.push({ tool_call_id: tc.id, role: "tool", content: result });
         }

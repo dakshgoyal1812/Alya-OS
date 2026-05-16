@@ -102,6 +102,15 @@ async function main() {
   // Start Background Automations
   startCronJobs(bridges);
 
+  // Global Error Handlers
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("🚨 Unhandled Rejection at:", promise, "reason:", reason);
+  });
+
+  process.on("uncaughtException", (err) => {
+    console.error("🚨 Uncaught Exception:", err);
+  });
+
   // Graceful shutdown
   const shutdown = async () => {
     console.log(`\n${ALYA_EMOJI} Alya is shutting down... See you next time.`);

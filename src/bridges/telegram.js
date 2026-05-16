@@ -102,7 +102,11 @@ _All systems operational._ ✨`;
       if (msg.text?.startsWith("/")) return;
       if (!msg.text) return;
 
-      await this.handleMessage(msg);
+      try {
+        await this.handleMessage(msg);
+      } catch (err) {
+        console.error("Telegram critical handler error:", err);
+      }
     });
 
     // Handle voice messages
@@ -122,7 +126,11 @@ _All systems operational._ ✨`;
     const content = msg.text;
 
     // Send typing action
-    this.bot.sendChatAction(chatId, "typing");
+    try {
+      await this.bot.sendChatAction(chatId, "typing");
+    } catch (e) {
+      console.warn("Telegram: Failed to send typing action");
+    }
 
     // Get conversation history
     const history = getHistory("telegram", chatId);
