@@ -209,6 +209,16 @@
     if (!text) return "";
     let html = text
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/<media>([\s\S]*?)<\/media>/gi, (match, path) => {
+        let url = path.trim();
+        // If it's a local path, extract just the filename and use /temp/ route
+        if (!url.startsWith("http")) {
+          const parts = url.split(/[\\\/]/);
+          const filename = parts[parts.length - 1];
+          url = `/temp/${filename}`;
+        }
+        return `<img src="${url}" style="max-width:100%; border-radius:8px; margin-top:8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">`;
+      })
       .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%; border-radius:8px; margin-top:8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">') // Convert markdown images
       .replace(/(https:\/\/image\.pollinations\.ai[^\s]+)/g, '<img src="$1" style="max-width:100%; border-radius:8px; margin-top:8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">') // Auto-embed raw pollinations URLs
       .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')

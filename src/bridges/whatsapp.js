@@ -114,10 +114,33 @@ export class WhatsAppBridge {
 
       // Check for <voice> tag
       const voiceMatch = response.match(/<voice>([\s\S]*?)<\/voice>/i);
-      let textToSend = response.replace(/<voice>[\s\S]*?<\/voice>/i, "").trim();
+      // Check for <media> tag
+      const mediaMatch = response.match(/<media>([\s\S]*?)<\/media>/i);
+      
+      let textToSend = response
+        .replace(/<voice>[\s\S]*?<\/voice>/i, "")
+        .replace(/<media>[\s\S]*?<\/media>/i, "")
+        .trim();
 
       if (textToSend.length > 0) {
         await chat.sendMessage(textToSend);
+      }
+
+      // Send Media if requested
+      if (mediaMatch) {
+        const mediaSource = mediaMatch[1].trim();
+        try {
+          let media;
+          if (mediaSource.startsWith("http")) {
+            media = await MessageMedia.fromUrl(mediaSource);
+          } else {
+            media = MessageMedia.fromFilePath(mediaSource);
+          }
+          await chat.sendMessage(media);
+        } catch (err) {
+          console.error("WhatsApp media send error:", err);
+          await chat.sendMessage("*(System: Failed to send media. Check logs.)*");
+        }
       }
 
       // Send Voice Note if requested

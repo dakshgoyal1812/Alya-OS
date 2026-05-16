@@ -3,10 +3,11 @@
 // Connects Alya to Discord as a bot
 // ============================================================
 
-import { Client, GatewayIntentBits, Events, ActivityType } from "discord.js";
+import { Client, GatewayIntentBits, Events, ActivityType, AttachmentBuilder } from "discord.js";
 import { LLMEngine } from "../core/llm.js";
 import { getHistory, addMessage, clearHistory } from "../core/memory.js";
 import { getRandomGreeting, getThinkingMessage, SERVICE_CONNECT_MESSAGES } from "../core/personality.js";
+import { generateTTS } from "../core/tts.js";
 
 export class DiscordBridge {
   constructor(config) {
@@ -110,14 +111,43 @@ export class DiscordBridge {
       addMessage("discord", message.channel.id, "user", content);
       addMessage("discord", message.channel.id, "assistant", response);
 
-      // Split long responses (Discord has 2000 char limit)
-      if (response.length > 1900) {
-        const chunks = splitMessage(response, 1900);
-        for (const chunk of chunks) {
-          await message.reply(chunk);
+      // Check for <voice> tag
+      const voiceMatch = response.match(/<voice>([\s\S]*?)<\/voice>/i);
+      // Check for <media> tag
+      const mediaMatch = response.match(/<media>([\s\S]*?)<\/media>/i);
+
+      let textToSend = response
+        .replace(/<voice>[\s\S]*?<\/voice>/i, "")
+        .replace(/<media>[\s\S]*?<\/media>/i, "")
+        .trim();
+
+      if (textToSend.length > 0) {
+        // Split long responses (Discord has 2000 char limit)
+        if (textToSend.length > 1900) {
+          const chunks = splitMessage(textToSend, 1900);
+          for (const chunk of chunks) {
+            await message.reply(chunk);
+          }
+        } else {
+          await message.reply(textToSend);
         }
-      } else {
-        await message.reply(response);
+      }
+
+      // Send Media if requested
+      if (mediaMatch) {
+        const mediaSource = mediaMatch[1].trim();
+        const attachment = new AttachmentBuilder(mediaSource);
+        await message.channel.send({ files: [attachment] });
+      }
+
+      // Send Voice Note if requested
+      if (voiceMatch) {
+        const spokenText = voiceMatch[1].trim();
+        const audioPath = await generateTTS(spokenText);
+        if (audioPath) {
+          const attachment = new AttachmentBuilder(audioPath);
+          await message.channel.send({ files: [attachment] });
+        }
       }
     } catch (error) {
       console.error("Discord message error:", error);

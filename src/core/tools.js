@@ -564,7 +564,7 @@ export async function executeTool(name, args) {
       case "generate_image": {
         const safePrompt = encodeURIComponent(args.prompt);
         const imageUrl = `https://image.pollinations.ai/prompt/${safePrompt}?nologo=true&seed=${Math.floor(Math.random() * 10000)}`;
-        return `Image successfully generated! Please reply to the user with EXACTLY this text so the image embeds correctly: "Here is your image: ${imageUrl}"`;
+        return `Image successfully generated! <media>${imageUrl}</media>`;
       }
 
       case "manage_reminders": {
@@ -708,7 +708,7 @@ export async function executeTool(name, args) {
           
           await page.screenshot({ path: filePath });
           await browser.close();
-          return `Screenshot successfully taken! Please reply to the user with EXACTLY this text so the image embeds properly: ${filePath}`;
+          return `Screenshot successfully taken! <media>${filePath}</media>`;
         } catch (err) {
           return `Failed to screenshot website: ${err.message}`;
         }
@@ -725,7 +725,7 @@ export async function executeTool(name, args) {
           const filePath = path.join(tempDir, `qrcode_${Date.now()}.png`);
           
           fs.writeFileSync(filePath, Buffer.from(buffer));
-          return `QR Code generated! Please reply to the user with EXACTLY this text so the image embeds properly: ${filePath}`;
+          return `QR Code generated! <media>${filePath}</media>`;
         } catch (err) {
           return `Failed to generate QR code: ${err.message}`;
         }

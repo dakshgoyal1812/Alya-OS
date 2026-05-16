@@ -87,7 +87,23 @@ export class SlackBridge {
       addMessage("slack", channelId, "user", content);
       addMessage("slack", channelId, "assistant", response);
 
-      await say(response);
+      // Check for <media> tag
+      const mediaMatch = response.match(/<media>([\s\S]*?)<\/media>/i);
+      let textToSend = response.replace(/<media>[\s\S]*?<\/media>/i, "").trim();
+
+      if (textToSend.length > 0) {
+        await say(textToSend);
+      }
+
+      if (mediaMatch) {
+        const mediaSource = mediaMatch[1].trim();
+        // Slack auto-previews images if they are URLs
+        if (mediaSource.startsWith("http")) {
+          await say(mediaSource);
+        } else {
+          await say(`*(System: Media file path detected, but Slack local file upload is not yet implemented: ${mediaSource})*`);
+        }
+      }
     } catch (error) {
       console.error("Slack message error:", error);
       await say("✨ Something went wrong. Try again.");
@@ -115,10 +131,25 @@ export class SlackBridge {
       addMessage("slack", channelId, "user", content);
       addMessage("slack", channelId, "assistant", response);
 
-      await say({
-        text: response,
+      // Check for <media> tag
+      const mediaMatch = response.match(/<media>([\s\S]*?)<\/media>/i);
+      let textToSend = response.replace(/<media>[\s\S]*?<\/media>/i, "").trim();
+
+      const messageOptions = {
+        text: textToSend,
         thread_ts: event.thread_ts || event.ts,
-      });
+      };
+
+      if (textToSend.length > 0) {
+        await say(messageOptions);
+      }
+
+      if (mediaMatch) {
+        const mediaSource = mediaMatch[1].trim();
+        if (mediaSource.startsWith("http")) {
+          await say({ text: mediaSource, thread_ts: event.thread_ts || event.ts });
+        }
+      }
     } catch (error) {
       console.error("Slack mention error:", error);
       await say("✨ Something went wrong. Try again.");

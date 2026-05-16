@@ -137,7 +137,13 @@ _All systems operational._ ✨`;
 
       // Check for <voice> tag
       const voiceMatch = response.match(/<voice>([\s\S]*?)<\/voice>/i);
-      let textToSend = response.replace(/<voice>[\s\S]*?<\/voice>/i, "").trim();
+      // Check for <media> tag
+      const mediaMatch = response.match(/<media>([\s\S]*?)<\/media>/i);
+
+      let textToSend = response
+        .replace(/<voice>[\s\S]*?<\/voice>/i, "")
+        .replace(/<media>[\s\S]*?<\/media>/i, "")
+        .trim();
 
       if (textToSend.length > 0) {
         // Split long messages (Telegram has 4096 char limit)
@@ -152,6 +158,21 @@ _All systems operational._ ✨`;
           await this.bot.sendMessage(chatId, textToSend, { parse_mode: "Markdown" }).catch(() => {
             this.bot.sendMessage(chatId, textToSend);
           });
+        }
+      }
+
+      // Send Media if requested
+      if (mediaMatch) {
+        const mediaSource = mediaMatch[1].trim();
+        try {
+          if (mediaSource.startsWith("http")) {
+            await this.bot.sendPhoto(chatId, mediaSource);
+          } else {
+            await this.bot.sendPhoto(chatId, mediaSource);
+          }
+        } catch (err) {
+          console.error("Telegram media send error:", err);
+          await this.bot.sendMessage(chatId, "*(System: Failed to send media. Check logs.)*");
         }
       }
 
