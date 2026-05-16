@@ -5,7 +5,6 @@ import fetch from "node-fetch";
 import { YoutubeTranscript } from "youtube-transcript";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
-const pdf = require("pdf-parse");
 import nodemailer from "nodemailer";
 import { search } from "duck-duck-scrape";
 import { loadConfig } from "./config.js";
@@ -625,6 +624,7 @@ export async function executeTool(name, args) {
       case "read_pdf": {
         try {
           if (!fs.existsSync(args.absolutePath)) return `File not found at: ${args.absolutePath}`;
+          const pdf = require("pdf-parse");
           const dataBuffer = fs.readFileSync(args.absolutePath);
           const pdfData = await pdf(dataBuffer);
           const textChunk = pdfData.text.substring(0, 15000);
