@@ -19,7 +19,7 @@ export async function generateTTS(text) {
   }
 
   const apiKey = keys[currentElevenLabsKeyIndex];
-  const voiceId = config.elevenlabs.voiceId || "21m00Tcm4ilJCfrq6dzz"; // Default: Rachel (Very Feminine)
+  const voiceId = config.elevenlabs.voiceId || "9BWtsMINHqgu8Vj69vS2"; // Default: Aria (Soft & Gentle)
   
   try {
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
