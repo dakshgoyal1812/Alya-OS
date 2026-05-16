@@ -17,7 +17,9 @@ import { fileURLToPath } from "url";
 import { startCronJobs } from "./core/cron.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const configPath = join(__dirname, "..", "config", "config.json");
+const renderSecretPath = "/etc/secrets/config.json";
+const localPath = join(__dirname, "..", "config", "config.json");
+const configPath = existsSync(renderSecretPath) ? renderSecretPath : localPath;
 
 async function main() {
   console.log("");

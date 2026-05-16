@@ -9,7 +9,11 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const CONFIG_PATH = join(__dirname, "..", "..", "config", "config.json");
+
+// Check Render's secret mount path first, fallback to local config folder
+const renderSecretPath = "/etc/secrets/config.json";
+const localPath = join(__dirname, "..", "..", "config", "config.json");
+const CONFIG_PATH = existsSync(renderSecretPath) ? renderSecretPath : localPath;
 
 /**
  * Default configuration
