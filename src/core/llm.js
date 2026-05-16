@@ -322,7 +322,7 @@ export class LLMEngine {
     try {
       const response = await this.openai.chat.completions.create({
         model: this.model,
-        messages: [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: prompt }],
+        messages: [{ role: "system", content: getSystemPrompt("normal") }, { role: "user", content: prompt }],
       });
       this._resetKeyTracker(); // Success — reset key tracker
       return cleanResponse(response.choices[0].message.content) || getErrorMessage("llm_error");

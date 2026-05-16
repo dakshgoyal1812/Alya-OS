@@ -53,6 +53,15 @@ export class WebBridge {
       res.json({ bridges: statuses, stats: getStats() });
     });
 
+    // API: Get WhatsApp QR Code
+    this.app.get("/api/whatsapp/qr", (req, res) => {
+      const wa = this.bridges.whatsapp;
+      if (!wa || !wa.lastQR) {
+        return res.status(404).json({ error: "QR code not available yet. Please wait for initialization." });
+      }
+      res.redirect(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(wa.lastQR)}`);
+    });
+
     // Socket.IO for real-time chat
     this.io.on("connection", (socket) => {
       const sessionId = `web_${socket.id}`;

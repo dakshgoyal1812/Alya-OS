@@ -7,6 +7,7 @@ import TelegramBot from "node-telegram-bot-api";
 import { LLMEngine } from "../core/llm.js";
 import { getHistory, addMessage, clearHistory } from "../core/memory.js";
 import { getRandomGreeting, SERVICE_CONNECT_MESSAGES } from "../core/personality.js";
+import { generateTTS } from "../core/tts.js";
 
 export class TelegramBridge {
   constructor(config) {
@@ -134,19 +135,36 @@ _All systems operational._ ✨`;
       addMessage("telegram", chatId, "user", content);
       addMessage("telegram", chatId, "assistant", response);
 
-      // Split long messages (Telegram has 4096 char limit)
-      if (response.length > 4000) {
-        const chunks = splitMessage(response, 4000);
-        for (const chunk of chunks) {
-          await this.bot.sendMessage(chatId, chunk, { parse_mode: "Markdown" }).catch(() => {
-            // Fallback without markdown if parsing fails
-            this.bot.sendMessage(chatId, chunk);
+      // Check for <voice> tag
+      const voiceMatch = response.match(/<voice>([\s\S]*?)<\/voice>/i);
+      let textToSend = response.replace(/<voice>[\s\S]*?<\/voice>/i, "").trim();
+
+      if (textToSend.length > 0) {
+        // Split long messages (Telegram has 4096 char limit)
+        if (textToSend.length > 4000) {
+          const chunks = splitMessage(textToSend, 4000);
+          for (const chunk of chunks) {
+            await this.bot.sendMessage(chatId, chunk, { parse_mode: "Markdown" }).catch(() => {
+              this.bot.sendMessage(chatId, chunk);
+            });
+          }
+        } else {
+          await this.bot.sendMessage(chatId, textToSend, { parse_mode: "Markdown" }).catch(() => {
+            this.bot.sendMessage(chatId, textToSend);
           });
         }
-      } else {
-        await this.bot.sendMessage(chatId, response, { parse_mode: "Markdown" }).catch(() => {
-          this.bot.sendMessage(chatId, response);
-        });
+      }
+
+      // Send Voice Note if requested
+      if (voiceMatch) {
+        const spokenText = voiceMatch[1].trim();
+        const audioPath = await generateTTS(spokenText);
+
+        if (audioPath) {
+          await this.bot.sendVoice(chatId, audioPath);
+        } else {
+          await this.bot.sendMessage(chatId, "*(System: Voice generation failed. Check ElevenLabs API keys.)*");
+        }
       }
     } catch (error) {
       console.error("Telegram message error:", error);

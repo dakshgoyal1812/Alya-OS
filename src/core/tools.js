@@ -1,7 +1,6 @@
 import os from "os";
 import fs from "fs";
 import path from "path";
-import fetch from "node-fetch";
 import { YoutubeTranscript } from "youtube-transcript";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
@@ -687,9 +686,18 @@ export async function executeTool(name, args) {
 
       case "screenshot_website": {
         try {
-          // Dynamically import puppeteer since it's already in node_modules from whatsapp
           const puppeteer = (await import("puppeteer")).default;
-          const browser = await puppeteer.launch({ headless: "new" });
+          const browser = await puppeteer.launch({ 
+            headless: "new",
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (process.platform === "linux" ? "/usr/bin/google-chrome" : undefined),
+            args: [
+              "--no-sandbox", 
+              "--disable-setuid-sandbox", 
+              "--disable-gpu", 
+              "--disable-dev-shm-usage",
+              "--no-zygote"
+            ]
+          });
           const page = await browser.newPage();
           await page.setViewport({ width: 1280, height: 800 });
           await page.goto(args.url, { waitUntil: 'networkidle2' });

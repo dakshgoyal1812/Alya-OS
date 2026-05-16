@@ -17,7 +17,7 @@ async function runTests() {
     if (!yt.includes("Transcript") && !yt.includes("Failed")) throw new Error("YouTube failed");
 
     console.log("\n🧪 3. Testing Website Reading...");
-    const web = await executeTool("read_website", { url: "https://example.com" });
+    const web = await executeTool("scrape_website", { url: "https://example.com" });
     console.log("   Result:", web.substring(0, 100) + "...");
     if (!web.includes("Example Domain") && !web.includes("Failed")) throw new Error("Website failed");
 

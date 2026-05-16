@@ -29,14 +29,25 @@ export class WhatsAppBridge {
         authStrategy: new LocalAuth({ dataPath: join(__dirname, "..", "..", "data", "whatsapp-auth") }),
         puppeteer: { 
           headless: true, 
-          executablePath: process.platform === "linux" ? "/usr/bin/google-chrome" : undefined,
-          args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-gpu", "--disable-extensions", "--disable-dev-shm-usage"] 
+          executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (process.platform === "linux" ? "/usr/bin/google-chrome" : undefined),
+          args: [
+            "--no-sandbox", 
+            "--disable-setuid-sandbox", 
+            "--disable-gpu", 
+            "--disable-extensions", 
+            "--disable-dev-shm-usage",
+            "--no-zygote",
+            "--single-process"
+          ] 
         },
       });
 
       this.client.on("qr", (qr) => {
-        console.log("\n✨ WhatsApp: Scan this QR code with your phone!\n");
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`;
+        console.log("\n✨ WhatsApp: Scan this QR code with your phone!");
+        console.log(`🔗 QR Link: ${qrUrl}\n`);
         qrcode.generate(qr, { small: true });
+        this.lastQR = qr; // Expose for API
         if (this.qrCallback) this.qrCallback(qr);
       });
 

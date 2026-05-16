@@ -66,6 +66,49 @@ export function loadConfig() {
     } else {
       cachedConfig = { ...DEFAULT_CONFIG };
     }
+
+    // --- Environment Variable Overrides (Crucial for Render/Cloud) ---
+    
+    // Groq
+    if (process.env.GROQ_API_KEY) {
+      if (!cachedConfig.groq) cachedConfig.groq = {};
+      cachedConfig.groq.apiKey = process.env.GROQ_API_KEY;
+    }
+    if (process.env.GROQ_MODEL) {
+      if (!cachedConfig.groq) cachedConfig.groq = {};
+      cachedConfig.groq.model = process.env.GROQ_MODEL;
+    }
+
+    // Telegram
+    if (process.env.TELEGRAM_TOKEN) {
+      if (!cachedConfig.telegram) cachedConfig.telegram = {};
+      cachedConfig.telegram.enabled = true;
+      cachedConfig.telegram.token = process.env.TELEGRAM_TOKEN;
+    }
+
+    // Discord
+    if (process.env.DISCORD_TOKEN) {
+      if (!cachedConfig.discord) cachedConfig.discord = {};
+      cachedConfig.discord.enabled = true;
+      cachedConfig.discord.token = process.env.DISCORD_TOKEN;
+    }
+
+    // WhatsApp
+    if (process.env.WHATSAPP_ENABLED === "true") {
+      if (!cachedConfig.whatsapp) cachedConfig.whatsapp = {};
+      cachedConfig.whatsapp.enabled = true;
+    }
+
+    // Email
+    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      cachedConfig.email = {
+        enabled: true,
+        service: process.env.EMAIL_SERVICE || "gmail",
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      };
+    }
+    
   } catch (error) {
     console.error("Error loading config:", error.message);
     cachedConfig = { ...DEFAULT_CONFIG };
