@@ -1,0 +1,45 @@
+{
+  "name": "alya-ai-assistant",
+  "version": "1.0.0",
+  "description": "✨ Alya — Your private, local AI assistant. Runs on Ollama, connects to WhatsApp, Discord, Telegram, Slack, and has voice capabilities.",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "setup": "node setup.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@slack/bolt": "^3.22.0",
+    "chalk": "^5.4.1",
+    "discord.js": "^14.16.3",
+    "duck-duck-scrape": "^2.2.5",
+    "express": "^4.21.0",
+    "figlet": "^1.8.0",
+    "inquirer": "^12.3.2",
+    "node-cron": "^4.2.1",
+    "node-telegram-bot-api": "^0.66.0",
+    "nodemailer": "^6.9.13",
+    "openai": "^4.28.0",
+    "ora": "^8.1.1",
+    "pdf-parse": "^2.4.5",
+    "puppeteer": "^25.0.2",
+    "qrcode-terminal": "^0.12.0",
+    "socket.io": "^4.7.5",
+    "whatsapp-web.js": "^1.26.0",
+    "youtube-transcript": "^1.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "ai",
+    "assistant",
+    "local",
+    "private",
+    "ollama",
+    "lobster",
+    "chatbot"
+  ],
+  "license": "MIT"
+}
