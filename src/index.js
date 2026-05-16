@@ -29,14 +29,7 @@ async function main() {
   console.log("  ╚══════════════════════════════════════════╝");
   console.log("");
 
-  // Check if config exists
-  if (!existsSync(configPath)) {
-    console.log("  ⚠️  No configuration found!");
-    console.log("  Run this first:  npm run setup");
-    console.log("  This will walk you through connecting your accounts.\n");
-    process.exit(1);
-  }
-
+  // Load configuration
   const config = loadConfig();
   const llm = new LLMEngine();
 
