@@ -108,6 +108,17 @@ export function loadConfig() {
         pass: process.env.EMAIL_PASS
       };
     }
+
+    // ElevenLabs
+    if (process.env.ELEVENLABS_API_KEY) {
+      if (!cachedConfig.elevenlabs) cachedConfig.elevenlabs = { enabled: true, apiKeys: [] };
+      cachedConfig.elevenlabs.enabled = true;
+      cachedConfig.elevenlabs.apiKeys = [process.env.ELEVENLABS_API_KEY];
+    }
+    if (process.env.ELEVENLABS_VOICE_ID) {
+      if (!cachedConfig.elevenlabs) cachedConfig.elevenlabs = {};
+      cachedConfig.elevenlabs.voiceId = process.env.ELEVENLABS_VOICE_ID;
+    }
     
   } catch (error) {
     console.error("Error loading config:", error.message);
