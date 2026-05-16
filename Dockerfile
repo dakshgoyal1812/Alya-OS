@@ -16,6 +16,8 @@ WORKDIR /app
 
 # Copy package.json and install dependencies
 COPY package*.json ./
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
 RUN npm install
 
 # Copy all files
