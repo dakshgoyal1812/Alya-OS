@@ -29,6 +29,15 @@ export class TelegramBridge {
 
     try {
       this.bot = new TelegramBot(this.config.token, { polling: true });
+      
+      // Handle polling errors gracefully (especially 409 Conflicts)
+      this.bot.on("polling_error", (error) => {
+        if (error.message && error.message.includes("409")) {
+          console.warn("⚠️ Telegram Warning: 409 Conflict. Another instance of this bot is active elsewhere. Waiting for the other instance to close...");
+        } else {
+          console.error("Telegram polling error:", error.message || error);
+        }
+      });
 
       // Get bot info
       this.botInfo = await this.bot.getMe();
