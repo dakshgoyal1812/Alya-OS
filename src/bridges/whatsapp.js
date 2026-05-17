@@ -52,7 +52,9 @@ export class WhatsAppBridge {
             "--safebrowsing-disable-auto-update",
             "--disable-client-side-phishing-detection",
             "--disable-component-update",
-            "--js-flags=--expose-gc",
+            "--disable-features=site-per-process",
+            "--disable-site-isolation-trials",
+            "--js-flags=--max-old-space-size=120 --expose-gc",
             "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
           ] 
         },
