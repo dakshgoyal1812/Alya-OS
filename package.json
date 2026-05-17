@@ -5,9 +5,9 @@
   "type": "module",
   "main": "src/index.js",
   "scripts": {
-    "start": "node --max-old-space-size=150 src/index.js",
+    "start": "node --max-old-space-size=256 src/index.js",
     "setup": "node setup.js",
-    "dev": "node --watch --max-old-space-size=150 src/index.js"
+    "dev": "node --watch src/index.js"
   },
   "dependencies": {
     "@slack/bolt": "^3.22.0",
