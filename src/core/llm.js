@@ -166,6 +166,10 @@ export class LLMEngine {
 
       return cleanResponse(msg.content) || getErrorMessage("llm_error");
     } catch (error) {
+      const errMsg = error?.message || String(error);
+      const errStatus = error?.status || error?.response?.status || 'N/A';
+      console.error(`Groq chat error [status=${errStatus}]: ${errMsg}`);
+
       // Try switching to backup key on quota/rate-limit errors
       if (this._isQuotaError(error) && this._switchToNextKey()) {
         console.warn(`⚠️ Quota hit on key ${this.currentKeyIndex}. Retrying with backup key...`);
@@ -173,7 +177,7 @@ export class LLMEngine {
       }
       
       // Handle Groq's strict tool validation crash
-      if (error.status === 400 && error?.message?.includes("Failed to call a function")) {
+      if (error.status === 400 && errMsg.includes("Failed to call a function")) {
         console.warn("⚠️ Groq tool parser failed. Auto-recovering without tools...");
         try {
           const fallbackResponse = await this.openai.chat.completions.create({
@@ -187,7 +191,17 @@ export class LLMEngine {
         }
       }
 
-      console.error("Groq chat error:", error.message);
+      // Retry transient network errors (timeouts, connection resets, DNS failures)
+      if (!this._retryCount) this._retryCount = 0;
+      const isTransient = !error.status || error.status >= 500 || errMsg.includes("fetch") || errMsg.includes("ETIMEDOUT") || errMsg.includes("ECONNRESET") || errMsg.includes("socket") || errMsg.includes("network") || errMsg.includes("abort");
+      if (isTransient && this._retryCount < 3) {
+        this._retryCount++;
+        console.warn(`🔄 Transient error. Retrying attempt ${this._retryCount}/3 in 2s...`);
+        await new Promise(r => setTimeout(r, 2000));
+        return await this._processChat(messages, depth);
+      }
+      this._retryCount = 0;
+
       return getErrorMessage("llm_error");
     }
   }
@@ -285,6 +299,10 @@ export class LLMEngine {
 
       return cleanResponse(fullResponse) || getErrorMessage("llm_error");
     } catch (error) {
+      const errMsg = error?.message || String(error);
+      const errStatus = error?.status || error?.response?.status || 'N/A';
+      console.error(`Groq stream error [status=${errStatus}]: ${errMsg}`);
+
       // Try switching to backup key on quota/rate-limit errors
       if (this._isQuotaError(error) && this._switchToNextKey()) {
         console.warn(`⚠️ Quota hit on key ${this.currentKeyIndex}. Retrying stream with backup key...`);
@@ -315,7 +333,17 @@ export class LLMEngine {
         }
       }
 
-      console.error("Groq stream error:", error.message);
+      // Retry transient network errors
+      if (!this._streamRetryCount) this._streamRetryCount = 0;
+      const isTransient = !error.status || error.status >= 500 || errMsg.includes("fetch") || errMsg.includes("ETIMEDOUT") || errMsg.includes("ECONNRESET") || errMsg.includes("socket") || errMsg.includes("network") || errMsg.includes("abort");
+      if (isTransient && this._streamRetryCount < 3) {
+        this._streamRetryCount++;
+        console.warn(`🔄 Stream transient error. Retrying attempt ${this._streamRetryCount}/3 in 2s...`);
+        await new Promise(r => setTimeout(r, 2000));
+        return await this._processChatStream(messages, onChunk, depth);
+      }
+      this._streamRetryCount = 0;
+
       return getErrorMessage("llm_error");
     }
   }
