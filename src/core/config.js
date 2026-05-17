@@ -72,7 +72,19 @@ export function loadConfig() {
     // Groq
     if (process.env.GROQ_API_KEY) {
       if (!cachedConfig.groq) cachedConfig.groq = {};
-      cachedConfig.groq.apiKey = process.env.GROQ_API_KEY;
+      if (process.env.GROQ_API_KEY.includes(",")) {
+        cachedConfig.groq.apiKeys = process.env.GROQ_API_KEY.split(",").map(k => k.trim()).filter(Boolean);
+        cachedConfig.groq.apiKey = cachedConfig.groq.apiKeys[0];
+      } else {
+        cachedConfig.groq.apiKey = process.env.GROQ_API_KEY;
+      }
+    }
+    if (process.env.GROQ_API_KEYS) {
+      if (!cachedConfig.groq) cachedConfig.groq = {};
+      cachedConfig.groq.apiKeys = process.env.GROQ_API_KEYS.split(",").map(k => k.trim()).filter(Boolean);
+      if (cachedConfig.groq.apiKeys.length > 0 && !cachedConfig.groq.apiKey) {
+        cachedConfig.groq.apiKey = cachedConfig.groq.apiKeys[0];
+      }
     }
     if (process.env.GROQ_MODEL) {
       if (!cachedConfig.groq) cachedConfig.groq = {};
