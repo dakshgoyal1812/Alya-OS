@@ -243,7 +243,7 @@ async function main() {
   console.log(r("  ╚══════════════════════════════════════════╝\n"));
 
   console.log(bold("  What's been configured:\n"));
-  console.log(`  🧠 Ollama: ${g(config.ollama.host)} (model: ${b(config.ollama.model)})`);
+  console.log(`  🧠 Groq AI: ${g(config.groq.model)}`);
   console.log(`  🌐 Web Dashboard: ${config.web.enabled ? g("Enabled") + d(` (port ${config.web.port})`) : r("Disabled")}`);
   console.log(`  💬 Discord: ${config.discord.enabled ? g("Enabled") : d("Disabled")}`);
   console.log(`  ✈️  Telegram: ${config.telegram.enabled ? g("Enabled") : d("Disabled")}`);
@@ -257,9 +257,7 @@ async function main() {
     console.log(d("  That's fine! You can use the web dashboard."));
     console.log(d("  Run ") + b("npm run setup") + d(" again to add platforms later.\n"));
   }
-  console.log(`  1. Make sure Ollama is running: ${b("ollama serve")}`);
-  console.log(`  2. Pull your model: ${b(`ollama pull ${config.ollama.model}`)}`);
-  console.log(`  3. Start Alya: ${b("npm start")}\n`);
+  console.log(`  1. Start Alya: ${b("npm start")}\n`);
   console.log(r("  ✨ See you soon!\n"));
 }
 

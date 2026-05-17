@@ -8,6 +8,7 @@ import { LLMEngine } from "../core/llm.js";
 import { getHistory, addMessage, clearHistory } from "../core/memory.js";
 import { getRandomGreeting, SERVICE_CONNECT_MESSAGES } from "../core/personality.js";
 import { generateTTS } from "../core/tts.js";
+import fs from "fs";
 
 export class TelegramBridge {
   constructor(config) {
@@ -185,7 +186,7 @@ _All systems operational._ ✨`;
           if (mediaSource.startsWith("http")) {
             await this.bot.sendPhoto(chatId, mediaSource);
           } else {
-            await this.bot.sendPhoto(chatId, mediaSource);
+            await this.bot.sendPhoto(chatId, fs.createReadStream(mediaSource));
           }
         } catch (err) {
           console.error("Telegram media send error:", err);
@@ -199,7 +200,7 @@ _All systems operational._ ✨`;
         const audioPath = await generateTTS(spokenText);
 
         if (audioPath) {
-          await this.bot.sendVoice(chatId, audioPath);
+          await this.bot.sendVoice(chatId, fs.createReadStream(audioPath));
         } else {
           await this.bot.sendMessage(chatId, "*(System: Voice generation failed. Check ElevenLabs API keys.)*");
         }

@@ -1,7 +1,7 @@
 {
   "name": "alya-ai-assistant",
   "version": "1.0.0",
-  "description": "✨ Alya — Your private, local AI assistant. Runs on Ollama, connects to WhatsApp, Discord, Telegram, Slack, and has voice capabilities.",
+  "description": "✨ Alya — Your private, local AI assistant. Runs on Groq, connects to WhatsApp, Discord, Telegram, Slack, and has voice capabilities.",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
