@@ -23,7 +23,7 @@ export class WebBridge {
   }
 
   async start() {
-    const port = this.config.port || 3000;
+    const port = process.env.PORT || this.config.port || 3000;
 
     // Serve static files
     this.app.use(express.static(join(__dirname, "..", "..", "web")));
