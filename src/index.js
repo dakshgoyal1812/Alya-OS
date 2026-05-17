@@ -44,8 +44,15 @@ async function main() {
     console.log(`  Please run 'npm run setup' to add your API key.\n`);
   }
 
-  // Start bridges
+  // Start Web Dashboard FIRST so Render detects the open port immediately
   const bridges = {};
+  if (config.web?.enabled !== false) {
+    console.log(`\n${ALYA_EMOJI} Starting web dashboard...`);
+    const web = new WebBridge(config.web || { port: 3000 }, bridges);
+    await web.start();
+    bridges.web = web;
+  }
+
 
   // Discord
   if (config.discord?.enabled) {
@@ -79,13 +86,6 @@ async function main() {
     if (ok) bridges.whatsapp = whatsapp;
   }
 
-  // Web Dashboard (always starts)
-  if (config.web?.enabled !== false) {
-    console.log(`\n${ALYA_EMOJI} Starting web dashboard...`);
-    const web = new WebBridge(config.web || { port: 3000 }, bridges);
-    await web.start();
-    bridges.web = web;
-  }
 
   // Summary
   const activeBridges = Object.keys(bridges);
