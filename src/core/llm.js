@@ -89,11 +89,7 @@ export class LLMEngine {
       msg.includes("quota") ||
       msg.includes("tokens per minute") ||
       msg.includes("requests per minute") ||
-      msg.includes("resource_exhausted") ||
-      msg.includes("stream") || 
-      msg.includes("fetch") || 
-      msg.includes("aborted") ||
-      msg.includes("connection")
+      msg.includes("resource_exhausted")
     );
   }
 
