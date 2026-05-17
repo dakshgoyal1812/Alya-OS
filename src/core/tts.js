@@ -40,7 +40,7 @@ export async function generateTTS(text) {
     });
 
     if (!response.ok) {
-      if (response.status === 401 || response.status === 429) {
+      if (response.status === 401 || response.status === 429 || response.status === 403) {
         throw new Error(`QuotaExceeded`);
       }
       throw new Error(`API error: ${response.status}`);

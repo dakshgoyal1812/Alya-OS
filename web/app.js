@@ -325,11 +325,36 @@
   // Text-to-speech for responses (Fallback only)
   function speak(text) {
     // We now use ElevenLabs via socket 'voice' event.
-    // Old synthesis is kept as a very silent fallback or disabled.
-    return; 
-    
+    // This is kept as a fallback if you ever need browser-based TTS.
+    return; // Remove this return statement to enable browser TTS fallback
+
     if (!synthesis || !text) return;
-    ... (rest of old logic suppressed)
+    
+    // Clean text for speech
+    const cleanText = text
+      .replace(/<[^>]+>/g, '')
+      .replace(/[*_~`]/g, '')
+      .trim();
+
+    if (!cleanText) return;
+
+    synthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = "hi-IN";
+    utterance.rate = 1.0;
+    
+    const voices = synthesis.getVoices();
+    const voice = voices.find(v => v.lang.includes("hi") && v.name.toLowerCase().includes("female")) 
+               || voices.find(v => v.lang.includes("hi"));
+    if (voice) utterance.voice = voice;
+
+    utterance.onend = () => {
+      if (lastMessageWasVoice && !isListening) {
+        startListening();
+      }
+    };
+
+    synthesis.speak(utterance);
   }
 
   // --- Fetch Bridge Status ---

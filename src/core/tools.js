@@ -172,7 +172,7 @@ export const availableTools = [
     type: "function",
     function: {
       name: "generate_image",
-      description: "ONLY USE THIS TOOL IF THE USER EXPLICITLY ASKS FOR A PICTURE, DRAWING, OR IMAGE! Generate an image based on a text prompt. Returns a URL to the generated image which you MUST send to the user.",
+      description: "ONLY USE THIS TOOL IF THE USER EXPLICITLY ASKS FOR A PICTURE, DRAWING, OR IMAGE! Generate an image based on a text prompt. Returns a media tag. You MUST include the exact <media>...</media> tag in your final response to the user so they can see the image.",
       parameters: {
         type: "object",
         properties: {
@@ -317,7 +317,7 @@ export const availableTools = [
     type: "function",
     function: {
       name: "screenshot_website",
-      description: "Take a high-resolution screenshot of any website. IMPORTANT: The system will return the absolute file path to the image. You must reply with EXACTLY that file path in your message so it embeds properly.",
+      description: "Take a high-resolution screenshot of any website. IMPORTANT: The system will return a <media> tag. You MUST reply with EXACTLY that <media> tag in your message so the image embeds properly.",
       parameters: {
         type: "object",
         properties: {
@@ -331,7 +331,7 @@ export const availableTools = [
     type: "function",
     function: {
       name: "generate_qr_code",
-      description: "Generate a custom QR code for a link or text. The system will return the absolute file path. Reply with exactly that path.",
+      description: "Generate a custom QR code for a link or text. The system will return a <media> tag. You MUST reply with EXACTLY that <media> tag in your message so the image embeds properly.",
       parameters: {
         type: "object",
         properties: {
@@ -453,22 +453,26 @@ export async function executeTool(name, args) {
           return "Error: Email is not configured. Ask the user to run 'npm run setup' to configure their email first.";
         }
         
-        const transporter = nodemailer.createTransport({
-          service: config.email.service || "gmail",
-          auth: {
-            user: config.email.user,
-            pass: config.email.pass
-          }
-        });
-        
-        await transporter.sendMail({
-          from: `"Alya Assistant" <${config.email.user}>`,
-          to: args.to,
-          subject: args.subject,
-          text: args.body
-        });
-        
-        return `Email successfully sent to ${args.to}.`;
+        try {
+          const transporter = nodemailer.createTransport({
+            service: config.email.service || "gmail",
+            auth: {
+              user: config.email.user,
+              pass: config.email.pass
+            }
+          });
+          
+          await transporter.sendMail({
+            from: `"Alya Assistant" <${config.email.user}>`,
+            to: args.to,
+            subject: args.subject,
+            text: args.body
+          });
+          
+          return `Email successfully sent to ${args.to}.`;
+        } catch (err) {
+          return `Error sending email: ${err.message}. If using Gmail, please ensure that you are using an 'App Password' rather than your standard account password.`;
+        }
       }
         
       case "search_web": {
@@ -523,12 +527,9 @@ export async function executeTool(name, args) {
 
       case "scrape_website": {
         try {
-          const puppeteer = require("puppeteer");
-          const browser = await puppeteer.launch({ headless: true });
-          const page = await browser.newPage();
-          await page.goto(args.url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-          const text = await page.evaluate(() => document.body.innerText);
-          await browser.close();
+          const response = await fetch(`https://r.jina.ai/${args.url}`);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const text = await response.text();
           const cleanText = text.replace(/\s+/g, " ").trim();
           return `[Scraped Content from ${args.url}]:\n${cleanText.substring(0, 15000)}\n\n[System Note: Read this content and assist the user.]`;
         } catch (err) {
@@ -564,7 +565,7 @@ export async function executeTool(name, args) {
       case "generate_image": {
         const safePrompt = encodeURIComponent(args.prompt);
         const imageUrl = `https://image.pollinations.ai/prompt/${safePrompt}?nologo=true&seed=${Math.floor(Math.random() * 10000)}`;
-        return `Image successfully generated! <media>${imageUrl}</media>`;
+        return `Image successfully generated! You MUST include this exact string in your response to the user: <media>${imageUrl}</media>`;
       }
 
       case "manage_reminders": {
@@ -686,29 +687,15 @@ export async function executeTool(name, args) {
 
       case "screenshot_website": {
         try {
-          const puppeteer = (await import("puppeteer")).default;
-          const browser = await puppeteer.launch({ 
-            headless: "new",
-            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (process.platform === "linux" ? "/usr/bin/google-chrome" : undefined),
-            args: [
-              "--no-sandbox", 
-              "--disable-setuid-sandbox", 
-              "--disable-gpu", 
-              "--disable-dev-shm-usage",
-              "--no-zygote"
-            ]
-          });
-          const page = await browser.newPage();
-          await page.setViewport({ width: 1280, height: 800 });
-          await page.goto(args.url, { waitUntil: 'networkidle2' });
-          
+          const fetchUrl = `https://image.thum.io/get/width/1200/crop/800/${args.url}`;
+          const response = await fetch(fetchUrl);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const buffer = await response.arrayBuffer();
           const tempDir = path.join(process.cwd(), "data", "temp");
           if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
           const filePath = path.join(tempDir, `screenshot_${Date.now()}.png`);
-          
-          await page.screenshot({ path: filePath });
-          await browser.close();
-          return `Screenshot successfully taken! <media>${filePath}</media>`;
+          fs.writeFileSync(filePath, Buffer.from(buffer));
+          return `Screenshot successfully taken! You MUST include this exact string in your response to the user: <media>${filePath}</media>`;
         } catch (err) {
           return `Failed to screenshot website: ${err.message}`;
         }
@@ -725,7 +712,7 @@ export async function executeTool(name, args) {
           const filePath = path.join(tempDir, `qrcode_${Date.now()}.png`);
           
           fs.writeFileSync(filePath, Buffer.from(buffer));
-          return `QR Code generated! <media>${filePath}</media>`;
+          return `QR Code generated! You MUST include this exact string in your response to the user: <media>${filePath}</media>`;
         } catch (err) {
           return `Failed to generate QR code: ${err.message}`;
         }

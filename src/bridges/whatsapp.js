@@ -28,8 +28,7 @@ export class WhatsAppBridge {
       this.client = new Client({
         authStrategy: new LocalAuth({ dataPath: join(__dirname, "..", "..", "data", "whatsapp-auth") }),
         webVersionCache: {
-          type: "remote",
-          remotePath: "https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1018925586-alpha.html",
+          type: "none"
         },
         puppeteer: { 
           headless: true, 
@@ -42,6 +41,18 @@ export class WhatsAppBridge {
             "--disable-dev-shm-usage",
             "--no-zygote",
             "--single-process",
+            "--disable-software-rasterizer",
+            "--mute-audio",
+            "--no-first-run",
+            "--disable-background-networking",
+            "--disable-default-apps",
+            "--disable-sync",
+            "--disable-translate",
+            "--metrics-recording-only",
+            "--safebrowsing-disable-auto-update",
+            "--disable-client-side-phishing-detection",
+            "--disable-component-update",
+            "--js-flags=--expose-gc",
             "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
           ] 
         },
