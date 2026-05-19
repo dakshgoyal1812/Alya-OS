@@ -315,6 +315,7 @@
     hideWelcome();
     if (msg) {
       appendMessage("user", msg);
+      scanEmotionalUndercurrent(msg);
     } else if (attachedImageBase64) {
       appendMessage("user", "[Attached Image]");
     }
@@ -367,6 +368,61 @@
     inputEl.style.height = "auto";
     inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + "px";
   });
+
+  // Track subconscious deletions
+  let backspaceCount = 0;
+  inputEl.addEventListener("keydown", (e) => {
+    if (e.key === "Backspace" || e.key === "Delete") {
+      backspaceCount++;
+      const delEl = document.getElementById("typing-deletions");
+      if (delEl) delEl.textContent = backspaceCount;
+      debounceSubconsciousLog();
+    }
+  });
+
+  let debounceTimeout = null;
+  function debounceSubconsciousLog() {
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(async () => {
+      const text = inputEl.value;
+      try {
+        const res = await fetch("/api/cognitive/subconscious", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deletedCount: backspaceCount, text })
+        });
+        const data = await res.json();
+        if (data.success && data.result) {
+          const avoidedEl = document.getElementById("typing-avoided");
+          if (avoidedEl) {
+            avoidedEl.textContent = data.result.avoidedTopics.length > 0 
+              ? data.result.avoidedTopics.join(", ") 
+              : "None";
+          }
+        }
+      } catch (e) {}
+    }, 2000);
+  }
+
+  async function scanEmotionalUndercurrent(text) {
+    if (!text) return;
+    try {
+      const res = await fetch("/api/cognitive/undercurrent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      const data = await res.json();
+      if (data.success && data.result) {
+        const moodEl = document.getElementById("undercurrent-mood");
+        const markersEl = document.getElementById("undercurrent-markers");
+        if (moodEl) moodEl.textContent = data.result.undercurrentMood;
+        if (markersEl) {
+          markersEl.innerHTML = data.result.detectedMarkers.map(m => `• ${m}`).join("<br>");
+        }
+      }
+    } catch(e) {}
+  }
 
   // --- Chip Prompts ---
   chips.forEach((chip) => {
@@ -1989,6 +2045,217 @@
     } catch(e) {}
   }
   loadExperimentalStats();
+
+  // 12. Inhuman Cognition Engine UI Bindings
+  const btnGenerateOracle = document.getElementById("btn-generate-oracle");
+  const btnRunPerspectives = document.getElementById("btn-run-perspectives");
+  const btnRunConsequences = document.getElementById("btn-run-consequences");
+  const btnRunFutureMap = document.getElementById("btn-run-future-map");
+  const btnCalculateMortality = document.getElementById("btn-calculate-mortality");
+  const btnRunDissections = document.getElementById("btn-run-dissections");
+
+  btnGenerateOracle?.addEventListener("click", async () => {
+    const out = document.getElementById("oracle-output");
+    out.style.display = "block";
+    out.textContent = "🎯 Activating Blind Spot Oracle... parsing subconscious vectors...";
+
+    try {
+      const res = await fetch("/api/cognitive/oracle");
+      const data = await res.json();
+      if (data.success && data.report) {
+        const r = data.report;
+        out.innerHTML = `
+          <strong>Date Generated:</strong> ${new Date(r.generatedAt).toLocaleDateString()}<br>
+          <strong>Age Profile:</strong> ${r.ageProfile}<br>
+          <strong>Planning Distortion Bias:</strong> ${r.timeDistortionFactor}<br>
+          <strong>Subconscious Registry:</strong> ${r.subconsciousKeystrokeRegistry}<br>
+          <strong>Avoided Core Fears:</strong> ${r.avoidedFears.join(", ")}<br><br>
+          <strong>🧬 Diagnostic Summary:</strong><br>${r.profileSummary}<br><br>
+          <strong>🛡️ Key Prescription:</strong><br><em>${r.keyPrescription}</em>
+        `;
+      }
+    } catch (e) {
+      out.textContent = "Error generating blind spot report.";
+    }
+  });
+
+  btnRunPerspectives?.addEventListener("click", async () => {
+    const topic = document.getElementById("perspective-topic").value.trim();
+    if (!topic) return alert("Enter a topic first!");
+
+    const container = document.getElementById("perspective-wheel-container");
+    container.style.display = "flex";
+    
+    // Set loading
+    document.getElementById("lens-monk").textContent = "Loading...";
+    document.getElementById("lens-billionaire").textContent = "Loading...";
+    document.getElementById("lens-child").textContent = "Loading...";
+    document.getElementById("lens-enemy").textContent = "Loading...";
+    document.getElementById("lens-future").textContent = "Loading...";
+    document.getElementById("lens-socratic").textContent = "Loading...";
+
+    try {
+      const res = await fetch("/api/cognitive/perspectives", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic })
+      });
+      const data = await res.json();
+      if (data.success && data.perspectives) {
+        const p = data.perspectives;
+        document.getElementById("lens-monk").textContent = p.monk;
+        document.getElementById("lens-billionaire").textContent = p.billionaire;
+        document.getElementById("lens-child").textContent = p.child;
+        document.getElementById("lens-enemy").textContent = p.enemy;
+        document.getElementById("lens-future").textContent = p.futureSelf;
+        document.getElementById("lens-socratic").textContent = p.socratic;
+      }
+    } catch (e) {
+      container.style.display = "none";
+      alert("Error generating perspectives.");
+    }
+  });
+
+  btnRunConsequences?.addEventListener("click", async () => {
+    const decision = document.getElementById("consequence-decision").value.trim();
+    if (!decision) return alert("State a decision first!");
+
+    const out = document.getElementById("consequences-output");
+    out.style.display = "block";
+    out.textContent = "Mapping consequence tiers...";
+
+    try {
+      const res = await fetch("/api/cognitive/consequences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision })
+      });
+      const data = await res.json();
+      if (data.success && data.result) {
+        const r = data.result;
+        out.innerHTML = r.levels.map(l => {
+          return `<strong>Level ${l.level}: ${l.name}</strong><br>${l.description}<br><br>`;
+        }).join("");
+      }
+    } catch (e) {
+      out.textContent = "Error mapping consequences.";
+    }
+  });
+
+  btnRunFutureMap?.addEventListener("click", async () => {
+    const decision = document.getElementById("mapper-decision").value.trim();
+    if (!decision) return alert("Enter decision first!");
+
+    const out = document.getElementById("future-map-output");
+    out.style.display = "block";
+    out.textContent = "Running Monte Carlo timeline cascades...";
+
+    try {
+      const res = await fetch("/api/cognitive/future", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision })
+      });
+      const data = await res.json();
+      if (data.success && data.timeline) {
+        out.innerHTML = data.timeline.map(t => {
+          return `
+            <div style="margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
+              <span style="color: var(--cyan-400); font-weight: bold;">${t.scenario} (${t.likelihood}%)</span><br>
+              <span>Outcome: ${t.consequences}</span><br>
+              <small style="color: #f59e0b;">Primary Risk: ${t.riskFactor}</small>
+            </div>
+          `;
+        }).join("");
+      }
+    } catch (e) {
+      out.textContent = "Error running timeline mapper.";
+    }
+  });
+
+  btnCalculateMortality?.addEventListener("click", async () => {
+    const taskDays = document.getElementById("mortality-task-days").value || 1;
+    const out = document.getElementById("mortality-output");
+    out.style.display = "block";
+    out.textContent = "Calculating days...";
+
+    try {
+      const res = await fetch("/api/cognitive/mortality", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskDays })
+      });
+      const data = await res.json();
+      if (data.success && data.metrics) {
+        const m = data.metrics;
+        document.getElementById("mortality-days").textContent = `${m.daysRemaining.toLocaleString()} Days`;
+        document.getElementById("mortality-percent").textContent = `${m.percentRemaining}%`;
+        
+        out.innerHTML = `
+          <strong>Mortality Framing Audit:</strong><br>
+          • You are currently ${m.age} years old.<br>
+          • You have lived approximately ${m.daysLived.toLocaleString()} days.<br>
+          • This task demands ${m.taskCostDays} days, which represents <strong>${m.taskCostPercent}%</strong> of your remaining lifetime.<br><br>
+          <em>Verdict: Decide if this task is worth sacrificing that proportion of your finite existence.</em>
+        `;
+      }
+    } catch (e) {
+      out.textContent = "Error calculating mortality metrics.";
+    }
+  });
+
+  btnRunDissections?.addEventListener("click", async () => {
+    const statement = document.getElementById("dissection-statement").value.trim();
+    if (!statement) return alert("Write a statement first!");
+
+    const out = document.getElementById("dissections-output");
+    out.style.display = "block";
+    out.textContent = "Deconstructing statement premises...";
+
+    try {
+      // Get assumptions
+      const resA = await fetch("/api/cognitive/assumptions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ statement })
+      });
+      const dataA = await resA.json();
+
+      // Get contradictions
+      const resC = await fetch("/api/cognitive/contradiction", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ statement })
+      });
+      const dataC = await resC.json();
+
+      let html = "<strong>Micro-Assumption Dissections:</strong><br>";
+      if (dataA.success && dataA.assumptions) {
+        html += dataA.assumptions.map(a => `• ${a}`).join("<br>") + "<br><br>";
+      }
+
+      html += "<strong>Contradiction Genome conflicts:</strong><br>";
+      if (dataC.success && dataC.conflicts) {
+        if (dataC.conflicts.length === 0) {
+          html += "No logical conflicts detected against historical genome log.";
+        } else {
+          html += dataC.conflicts.map(c => {
+            return `
+              <div style="color: #f59e0b; border-left: 2px solid #f59e0b; padding-left: 6px; margin: 4px 0;">
+                Conflict Match (${c.conflictScore}% confidence)<br>
+                A: ${c.nodeA}<br>
+                B: ${c.nodeB}<br>
+                <strong>Inconsistency:</strong> ${c.mismatchReason}
+              </div>
+            `;
+          }).join("");
+        }
+      }
+      out.innerHTML = html;
+    } catch (e) {
+      out.textContent = "Error auditing statement.";
+    }
+  });
 
   // Initialize sync
   rehydrateStateFromLocal();

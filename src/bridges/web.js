@@ -18,6 +18,7 @@ import { WorkflowSuperpowersManager } from "../core/workflows.js";
 import { AdvancedMemoryEngine } from "../core/advanced_memory.js";
 import { ExperimentalMindEngine } from "../core/experimental_mind.js";
 import { AIFirewallShield, AIRoutingEngine } from "../core/security_router.js";
+import { InhumanCognitiveEngine } from "../core/inhuman_cognitive.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -69,6 +70,7 @@ export class WebBridge {
     this.experimental = new ExperimentalMindEngine();
     this.firewall = new AIFirewallShield();
     this.router = new AIRoutingEngine();
+    this.inhuman = new InhumanCognitiveEngine();
   }
 
   async start() {
@@ -421,6 +423,66 @@ export class WebBridge {
         threats: this.firewall.threatLog,
         costStats: this.router.stats
       });
+    });
+
+    // 🔮 Inhuman Cognitive Engine REST Endpoints
+    this.app.post("/api/cognitive/future", (req, res) => {
+      const { decision } = req.body;
+      const timeline = this.inhuman.simulateFutureTimeline(decision);
+      res.json({ success: true, timeline });
+    });
+
+    this.app.post("/api/cognitive/contradiction", (req, res) => {
+      const { statement } = req.body;
+      const conflicts = this.inhuman.mapContradictions(statement);
+      res.json({ success: true, conflicts });
+    });
+
+    this.app.post("/api/cognitive/perspectives", (req, res) => {
+      const { topic } = req.body;
+      const perspectives = this.inhuman.generateQuantumPerspectives(topic);
+      res.json({ success: true, perspectives });
+    });
+
+    this.app.post("/api/cognitive/consequences", (req, res) => {
+      const { decision } = req.body;
+      const result = this.inhuman.mapSecondOrderConsequences(decision);
+      res.json({ success: true, result });
+    });
+
+    this.app.post("/api/cognitive/subconscious", (req, res) => {
+      const { deletedCount, text } = req.body;
+      const result = this.inhuman.logSubconsciousMetadata(deletedCount, text);
+      res.json({ success: true, result });
+    });
+
+    this.app.post("/api/cognitive/mortality", (req, res) => {
+      const { taskDays } = req.body;
+      const metrics = this.inhuman.calculateMortalityMetrics(taskDays);
+      res.json({ success: true, metrics });
+    });
+
+    this.app.post("/api/cognitive/assumptions", (req, res) => {
+      const { statement } = req.body;
+      const assumptions = this.inhuman.dissectAssumptions(statement);
+      res.json({ success: true, assumptions });
+    });
+
+    this.app.post("/api/cognitive/undercurrent", (req, res) => {
+      const { text } = req.body;
+      const result = this.inhuman.translateUndercurrent(text);
+      res.json({ success: true, result });
+    });
+
+    this.app.post("/api/cognitive/timecorrect", (req, res) => {
+      const { taskName, estimated, actual } = req.body;
+      const profile = this.inhuman.recordTaskEstimation(taskName, estimated, actual);
+      res.json({ success: true, profile });
+    });
+
+    this.app.get("/api/cognitive/oracle", (req, res) => {
+      const report = this.inhuman.generateBlindSpotOracleReport();
+      res.json({ success: true, report });
     });
 
     // Socket.IO for real-time chat

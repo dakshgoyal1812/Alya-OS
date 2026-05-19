@@ -173,6 +173,7 @@
           <button class="tab-btn" data-tab="automation-pane">⚙️ Automations</button>
           <button class="tab-btn" data-tab="creator-pane">⚡ Creator & Coder</button>
           <button class="tab-btn" data-tab="experimental-pane">🌌 AR Mind Lab</button>
+          <button class="tab-btn" data-tab="inhuman-pane">🔮 Inhuman Cognition</button>
         </div>
 
         <div class="header-controls">
@@ -663,6 +664,134 @@
                     <span>Ghost Protocol (Zero Session Cache):</span>
                     <input type="checkbox" id="check-ghost-protocol">
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE 6: Inhuman Cognition Engine -->
+        <div id="inhuman-pane" class="tab-pane">
+          <div class="creator-panel-container">
+            <!-- Left Column: Oracle, Lenses & Consequence cascades -->
+            <div class="creator-left-column">
+              <!-- Blind Spot Oracle Card -->
+              <div class="creator-card">
+                <h4>🎯 The Blind Spot Oracle</h4>
+                <p style="font-size: 11px; color: var(--text-400); margin-bottom: 10px;">
+                  Compiles subconscious patterns, fears, contradictions, and planning distortions into a brutally honest diagnostic.
+                </p>
+                <button class="btn-primary" id="btn-generate-oracle" style="width: 100%;">Synthesize Inhuman Diagnostic Report</button>
+                <div id="oracle-output" class="console-box" style="margin-top: 10px; display: none; line-height: 1.4;"></div>
+              </div>
+
+              <!-- Quantum Perspective Wheel Card -->
+              <div class="creator-card" style="margin-top: 15px;">
+                <h4>⚛️ Quantum Perspective Engine</h4>
+                <div class="form-group">
+                  <label>Topic to view from 6 simultaneous angles:</label>
+                  <input type="text" id="perspective-topic" placeholder="e.g. Quitting my job to launch an AI application" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                </div>
+                <button class="btn-primary" id="btn-run-perspectives" style="width: 100%; margin-top: 8px;">Deconstruct Perspectives</button>
+                
+                <div id="perspective-wheel-container" style="display: none; margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+                  <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 6px;">
+                    <span style="color: #eab308; font-weight: bold; font-size: 11px;">🧘 Monk Lens:</span>
+                    <p id="lens-monk" style="font-size: 11px; margin: 4px 0 0 0; color: var(--text-200);"></p>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 6px;">
+                    <span style="color: #06b6d4; font-weight: bold; font-size: 11px;">💰 Billionaire Lens:</span>
+                    <p id="lens-billionaire" style="font-size: 11px; margin: 4px 0 0 0; color: var(--text-200);"></p>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 6px;">
+                    <span style="color: #a855f7; font-weight: bold; font-size: 11px;">👶 Child Lens:</span>
+                    <p id="lens-child" style="font-size: 11px; margin: 4px 0 0 0; color: var(--text-200);"></p>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 6px;">
+                    <span style="color: #ef4444; font-weight: bold; font-size: 11px;">🥊 Enemy Lens:</span>
+                    <p id="lens-enemy" style="font-size: 11px; margin: 4px 0 0 0; color: var(--text-200);"></p>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 6px;">
+                    <span style="color: #10b981; font-weight: bold; font-size: 11px;">👴 Future Self Lens:</span>
+                    <p id="lens-future" style="font-size: 11px; margin: 4px 0 0 0; color: var(--text-200);"></p>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 6px;">
+                    <span style="color: #ec4899; font-weight: bold; font-size: 11px;">💬 Socratic Lens:</span>
+                    <p id="lens-socratic" style="font-size: 11px; margin: 4px 0 0 0; color: var(--text-200);"></p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Second Order Consequence Card -->
+              <div class="creator-card" style="margin-top: 15px;">
+                <h4>🕸️ Second Order Consequence Engine</h4>
+                <div class="form-group">
+                  <label>Enter critical choice path:</label>
+                  <input type="text" id="consequence-decision" placeholder="e.g. Taking outside venture capital funding" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                </div>
+                <button class="btn-primary" id="btn-run-consequences" style="width: 100%; margin-top: 8px;">Map 5-Layer Consequence Cascade</button>
+                <div id="consequences-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+              </div>
+            </div>
+
+            <!-- Right Column: Future timelines, Mortality, Contradictions, Undercurrents -->
+            <div class="creator-right-column">
+              <!-- Probabilistic Future Timelines -->
+              <div class="creator-card">
+                <h4>🔮 Probabilistic Future Mapper</h4>
+                <div class="form-group">
+                  <label>Enter decision path for Monte Carlo timeline projection:</label>
+                  <input type="text" id="mapper-decision" placeholder="e.g. Moving to San Francisco" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                </div>
+                <button class="btn-primary" id="btn-run-future-map" style="width: 100%; margin-top: 8px;">Run Timelines Simulation</button>
+                <div id="future-map-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+              </div>
+
+              <!-- Mortality Salience Engine Card -->
+              <div class="creator-card" style="margin-top: 15px;">
+                <h4>💀 Mortality Salience Calculator</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; margin-bottom: 8px;">
+                  <div>Remaining Lifespan Days:</div>
+                  <div id="mortality-days" style="font-weight: bold; color: #ef4444; text-align: right;">--</div>
+                  <div>Percentage of Life Remaining:</div>
+                  <div id="mortality-percent" style="font-weight: bold; color: #ef4444; text-align: right;">--</div>
+                </div>
+                <div class="form-group">
+                  <label>Verify cost of task (Estimated days execution time):</label>
+                  <input type="number" id="mortality-task-days" value="3" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                </div>
+                <button class="btn-secondary" id="btn-calculate-mortality" style="width: 100%; margin-top: 8px; font-size: 11px;">Calculate Lifespan Cost</button>
+                <div id="mortality-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+              </div>
+
+              <!-- Contradiction & Assumption Dissector -->
+              <div class="creator-card" style="margin-top: 15px;">
+                <h4>🧬 Contradiction Genome & Assumptions</h4>
+                <div class="form-group">
+                  <label>Audit statement for logical inconsistencies & hidden fears:</label>
+                  <input type="text" id="dissection-statement" placeholder="e.g. I want to build a startup but I'm busy with school" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                </div>
+                <button class="btn-primary" id="btn-run-dissections" style="width: 100%; margin-top: 8px;">Audit Logic & Assumptions</button>
+                <div id="dissections-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+              </div>
+
+              <!-- Undercurrents & Subconscious Patterns -->
+              <div class="creator-card" style="margin-top: 15px;">
+                <h4>🌊 Emotional Undercurrents & Typing Profiler</h4>
+                <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>Subconscious Deletions (Keystroke counts):</span>
+                    <span id="typing-deletions" style="color: var(--cyan-400); font-weight: bold;">0</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between;">
+                    <span>Avoided Topics Logged:</span>
+                    <span id="typing-avoided" style="color: var(--cyan-400);">None</span>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; margin-top: 6px;">
+                    <span>Undercurrent Emotional Tone:</span>
+                    <span id="undercurrent-mood" style="color: #10b981; font-weight: bold;">Analyzing...</span>
+                  </div>
+                  <div id="undercurrent-markers" style="font-size: 11px; color: var(--text-400); margin-top: 4px; padding-left: 6px; border-left: 2px solid var(--border-subtle);"></div>
                 </div>
               </div>
             </div>
