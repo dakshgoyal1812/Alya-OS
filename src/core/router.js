@@ -142,7 +142,7 @@ export class ModelRouter {
     if (key.provider === "openai" && config.openai?.apiKey) isAvailable = true;
     if (key.provider === "google" && config.google?.apiKey) isAvailable = true;
     if (key.provider === "openrouter" && config.openrouter?.apiKey) isAvailable = true;
-    if (key.provider === "ollama") isAvailable = true; // Local is assumed always available
+    if (key.provider === "ollama" && config.ollama?.enabled) isAvailable = true;
 
     if (isAvailable) {
       return preferredKey;

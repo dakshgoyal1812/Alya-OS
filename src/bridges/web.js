@@ -824,6 +824,7 @@ export class WebBridge {
             socket.emit("voice", { url: `/temp/${fileName}` });
           }
         } catch (error) {
+          console.error("❌ Web Chat Stream error:", error);
           socket.emit("stream_end", {
             role: "assistant",
             content: "✨ Something went wrong. Could you check my Groq API keys?",
