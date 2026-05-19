@@ -29,22 +29,32 @@ export class TelegramBridge {
     }
 
     try {
-      this.bot = new TelegramBot(this.config.token, { polling: true });
-      
-      // Handle polling errors gracefully (especially 409 Conflicts)
-      this.bot.on("polling_error", (error) => {
-        if (error.message && error.message.includes("409")) {
-          console.warn("⚠️ Telegram Warning: 409 Conflict. Another instance of this bot is active elsewhere. Waiting for the other instance to close...");
-        } else {
-          console.error("Telegram polling error:", error.message || error);
-        }
+      this.bot = new TelegramBot(this.config.token, { 
+        polling: false 
       });
 
-      // Get bot info
+      // Get bot info first to test if the token is valid
       this.botInfo = await this.bot.getMe();
       this.isReady = true;
       console.log(`✨ Telegram: Connected as @${this.botInfo.username}`);
       console.log(`   ${SERVICE_CONNECT_MESSAGES.telegram}`);
+
+      // Start polling now that we know the token is valid
+      this.bot.startPolling({
+        params: { drop_pending_updates: true }
+      });
+
+      // Handle polling errors gracefully (especially 409 Conflicts)
+      this.bot.on("polling_error", (error) => {
+        if (error.message && error.message.includes("409")) {
+          console.warn("⚠️ Telegram Warning: 409 Conflict. Another instance of this bot is active elsewhere. Waiting for the other instance to close...");
+        } else if (error.message && error.message.includes("401")) {
+          console.error("❌ Telegram: 401 Unauthorized (Invalid bot token). Stopping polling.");
+          this.bot.stopPolling();
+        } else {
+          console.error("Telegram polling error:", error.message || error);
+        }
+      });
 
       // Register handlers
       this.registerHandlers();
@@ -111,6 +121,11 @@ _All systems operational._ ✨`;
       // Skip commands
       if (msg.text?.startsWith("/")) return;
       if (!msg.text) return;
+
+      if (!this.processedMessageIds) this.processedMessageIds = new Set();
+      if (this.processedMessageIds.has(msg.message_id)) return;
+      this.processedMessageIds.add(msg.message_id);
+      if (this.processedMessageIds.size > 200) this.processedMessageIds.clear();
 
       try {
         await this.handleMessage(msg);

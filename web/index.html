@@ -11,6 +11,14 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Drag and drop file overlay -->
+  <div id="drag-overlay" class="drag-overlay">
+    <div class="drag-overlay-message">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <p>Drop image or text files here to analyze them</p>
+    </div>
+  </div>
+
   <!-- Animated background -->
   <div class="bg-ocean">
     <div class="bubble b1"></div>
@@ -57,7 +65,80 @@
         </div>
       </div>
 
+      <!-- System Resources Widget -->
+      <div class="system-section">
+        <h3 class="section-title">⚡ System Resources</h3>
+        <div class="system-stats-grid">
+          <div class="resource-block">
+            <div class="resource-header">
+              <span>💻 CPU Load:</span>
+              <span id="cpu-percent-lbl">0%</span>
+            </div>
+            <div class="sparkline-wrapper">
+              <canvas id="cpu-sparkline" width="220" height="40"></canvas>
+            </div>
+          </div>
+          <div class="resource-block">
+            <div class="resource-header">
+              <span>🧠 RAM Usage:</span>
+              <span id="ram-percent-lbl">0%</span>
+            </div>
+            <div class="sparkline-wrapper">
+              <canvas id="ram-sparkline" width="220" height="40"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="stat-details">
+          <div class="stat-detail-item"><strong>RAM Details:</strong> <span id="ram-used">0 GB</span> / <span id="ram-total">0 GB</span></div>
+          <div class="stat-detail-item"><strong>CPU Cores:</strong> <span id="cpu-cores">-</span></div>
+          <div class="stat-detail-item"><strong>Host OS:</strong> <span id="system-os">-</span></div>
+        </div>
+      </div>
+
+      <!-- Active Reminders Widget -->
+      <div class="reminders-section">
+        <h3 class="section-title">📋 Active Reminders</h3>
+        <ul id="reminders-list" class="reminders-list">
+          <li class="reminder-empty">No active reminders</li>
+        </ul>
+      </div>
+
+      <!-- Background Swarm Watcher Panel -->
+      <div class="reminders-section" style="border-top: 1px solid var(--border-subtle)">
+        <h3 class="section-title">🛡️ Background Agent Guards</h3>
+        <ul class="reminders-list">
+          <li class="reminder-item" style="border-left-color: var(--accent-500)">
+            <div class="reminder-content-inner">
+              <span class="reminder-text">🛡️ Cybersecurity Watcher</span>
+              <span class="reminder-time">Status: Active & Secure (Port 3000)</span>
+            </div>
+          </li>
+          <li class="reminder-item" style="border-left-color: var(--ocean-500)">
+            <div class="reminder-content-inner">
+              <span class="reminder-text">📰 News & Trend Crawler</span>
+              <span class="reminder-time">Status: Monitoring GitHub Trends</span>
+            </div>
+          </li>
+          <li class="reminder-item" style="border-left-color: var(--teal-500)">
+            <div class="reminder-content-inner">
+              <span class="reminder-text">🧠 Memory Consolidator</span>
+              <span class="reminder-time">Status: Consolidated 4 sessions</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
       <div class="sidebar-footer">
+        <div class="voice-selector-container">
+          <label for="select-voice">🗣️ Alya's Voice:</label>
+          <select id="select-voice" class="voice-select">
+            <option value="9BWtsMINHqgu8Vj69vS2">Alya (Default Female)</option>
+            <option value="JBF274t2Wv783m58t8UP">Jarvis (British Male)</option>
+            <option value="EXAVITQu4vr4xnSDxMaL">Marcus (Deep Male)</option>
+            <option value="local-female">Local Female Fallback</option>
+            <option value="local-male">Local Male Fallback</option>
+          </select>
+        </div>
         <button class="btn-clear" id="btn-clear" title="Clear conversation">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
           Clear Chat
@@ -80,33 +161,401 @@
         <div class="chat-header-info">
           <span class="chat-emoji">✨</span>
           <div>
-            <h2>Chat with Alya</h2>
+            <h2>Alya OS Control Center</h2>
             <span class="chat-header-status" id="connection-status">Connecting...</span>
+          </div>
+        </div>
+        
+        <!-- Navigation Tabs -->
+        <div class="header-tabs">
+          <button class="tab-btn active" data-tab="chat-pane">💬 Conversation</button>
+          <button class="tab-btn" data-tab="dreamspace-pane">🧬 Cognitive Graph</button>
+          <button class="tab-btn" data-tab="automation-pane">⚙️ Automations</button>
+          <button class="tab-btn" data-tab="creator-pane">⚡ Creator & Coder</button>
+        </div>
+
+        <div class="header-controls">
+          <!-- Cognitive State Selector -->
+          <div class="control-select-group">
+            <label for="select-cognitive-state">🧠 Mode:</label>
+            <select id="select-cognitive-state" class="header-select">
+              <option value="focus">Focus</option>
+              <option value="research">Deep Research</option>
+              <option value="creative">Creative</option>
+              <option value="coding">Coding</option>
+              <option value="support">Support</option>
+              <option value="dreaming">Dreaming</option>
+            </select>
+          </div>
+          <!-- Thinking Mode Selector -->
+          <div class="control-select-group">
+            <label for="select-thinking">💡 Think:</label>
+            <select id="select-thinking" class="header-select">
+              <option value="normal">Normal</option>
+              <option value="reflection">Self-Reflect</option>
+              <option value="tree">Tree of Thought</option>
+            </select>
+          </div>
+          <!-- Router Mode Selector -->
+          <div class="control-select-group">
+            <label for="select-routing">⚡ Route:</label>
+            <select id="select-routing" class="header-select">
+              <option value="intelligence">Max IQ</option>
+              <option value="speed">Max Speed</option>
+              <option value="cost">Cost Opt</option>
+            </select>
+          </div>
+          <!-- Swarm Mode Checkbox -->
+          <div class="control-checkbox-group">
+            <input type="checkbox" id="check-swarm">
+            <label for="check-swarm">🐝 Swarm</label>
           </div>
         </div>
       </div>
 
-      <div class="messages-container" id="messages">
-        <!-- Welcome screen -->
-        <div class="welcome-screen" id="welcome-screen">
-          <div class="welcome-icon">✨</div>
-          <h2>Hey. I'm Alya.</h2>
-          <p>Your private AI assistant, running right here on your device.</p>
-          <p class="welcome-hint">Type a message or tap the mic to start talking.</p>
-          <div class="feature-chips">
-            <button class="chip" data-prompt="What can you help me with?">💡 What can you do?</button>
-            <button class="chip" data-prompt="Tell me something interesting">✨ Fun facts</button>
-            <button class="chip" data-prompt="Help me write a creative story">✍️ Write a story</button>
-            <button class="chip" data-prompt="Explain quantum computing simply">🔬 Explain science</button>
+      <!-- Tab Content Wrapper -->
+      <div class="tab-content">
+        <!-- PANE 1: Chat Workspace -->
+        <div id="chat-pane" class="tab-pane active">
+          <!-- Hologram Avatar Visualizer -->
+          <div class="hologram-container">
+            <div class="hologram-avatar" id="hologram-avatar">
+              <div class="hologram-ring ring1"></div>
+              <div class="hologram-ring ring2"></div>
+              <div class="hologram-ring ring3"></div>
+              <div class="hologram-core"></div>
+              <svg class="hologram-face" viewBox="0 0 100 100">
+                <circle cx="35" cy="45" r="5" fill="#06b6d4" id="eye-left" />
+                <circle cx="65" cy="45" r="5" fill="#06b6d4" id="eye-right" />
+                <path d="M 35 65 Q 50 65 65 65" stroke="#06b6d4" stroke-width="4" stroke-linecap="round" fill="none" id="mouth-line" />
+              </svg>
+            </div>
+            <div class="hologram-status-text" id="hologram-status">System AI: Idle</div>
+          </div>
+
+          <div class="messages-container" id="messages">
+            <!-- Welcome screen -->
+            <div class="welcome-screen" id="welcome-screen">
+              <div class="welcome-icon">✨</div>
+              <h2>Hey. I'm Alya.</h2>
+              <p>Your private AI assistant, running right here on your device.</p>
+              <p class="welcome-hint">Type a message or tap the mic to start talking.</p>
+              <div class="feature-chips">
+                <button class="chip" data-prompt="Alya, check my computer's RAM, cores and OS info.">💻 System specs</button>
+                <button class="chip" data-prompt="Alya, check the weather in New Delhi.">🌤️ Check Weather</button>
+                <button class="chip" data-prompt="Alya, take a screenshot of https://news.ycombinator.com">📸 Screenshot site</button>
+                <button class="chip" data-prompt="Alya, check the current price of Bitcoin.">🪙 Bitcoin price</button>
+                <button class="chip" data-prompt="Alya, generate an image of a futuristic floating island.">🎨 Generate image</button>
+                <button class="chip" data-prompt="Alya, what do you remember about me?">🧠 Recall memories</button>
+                <button class="chip" data-prompt="Alya, scan my storage logical drives space.">💾 Storage space</button>
+                <button class="chip" data-prompt="Alya, generate a QR Code for https://google.com">🔗 Make QR Code</button>
+                <button class="chip" data-prompt="Alya, add a reminder to water the plants tomorrow at 9am.">⏰ Set reminder</button>
+                <button class="chip" data-prompt="Alya, summarize this YouTube video: https://www.youtube.com/watch?v=jNQXAC9IVRw">🎥 YouTube summary</button>
+                <button class="chip" data-prompt="Alya, run a system backup.">📦 System Backup</button>
+                <button class="chip" data-prompt="Alya, execute python code to print the first 10 Fibonacci numbers.">🐍 Python Sandbox</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE 2: Dreamspace Cognitive Graph -->
+        <div id="dreamspace-pane" class="tab-pane">
+          <div class="dreamspace-container">
+            <div class="dreamspace-sidebar">
+              <h4>🧬 Memory & Cognitive Engine</h4>
+              
+              <div class="emotional-indicator">
+                <h5>Emotional Status Tracker</h5>
+                <div class="stress-bar-container">
+                  <span>Stress Level:</span>
+                  <div class="progress-bar"><div id="stress-fill" class="progress-fill" style="width: 10%"></div></div>
+                </div>
+                <div class="stress-bar-container">
+                  <span>Frustration:</span>
+                  <div class="progress-bar"><div id="frustration-fill" class="progress-fill" style="width: 0%"></div></div>
+                </div>
+                <div class="stress-bar-container">
+                  <span>Excitement:</span>
+                  <div class="progress-bar"><div id="excitement-fill" class="progress-fill" style="width: 55%"></div></div>
+                </div>
+                <div class="stress-bar-container">
+                  <span>Confusion:</span>
+                  <div class="progress-bar"><div id="confusion-fill" class="progress-fill" style="width: 5%"></div></div>
+                </div>
+              </div>
+
+              <div class="habit-list-container">
+                <h5>Discovered Habits</h5>
+                <ul id="db-habits-list" class="db-habits-list">
+                  <li class="habit-empty">No habits mapped yet</li>
+                </ul>
+              </div>
+
+              <!-- 📊 Cognitive Mirror & Fatigue Status -->
+              <div class="cognitive-status-container" style="margin-top: 15px; background: rgba(6, 182, 212, 0.05); padding: 10px; border-radius: 6px; border: 1px solid rgba(6, 182, 212, 0.15);">
+                <h5 style="color: var(--cyan-400); margin-bottom: 8px;">🧠 Cognitive Mirror Metrics</h5>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                  <span>Cognitive Load Index:</span>
+                  <span id="txt-cognitive-load">Low (0.12)</span>
+                </div>
+                <div class="progress-bar"><div id="cognitive-load-fill" class="progress-fill" style="width: 12%; background: #06b6d4;"></div></div>
+                
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 8px; margin-bottom: 4px;">
+                  <span>Decision Fatigue:</span>
+                  <span id="txt-fatigue-status" style="color: #10b981; font-weight: bold;">Calm</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 4px;">
+                  <span>Dominant Style:</span>
+                  <span id="txt-dominant-style" style="text-transform: capitalize;">Analytical</span>
+                </div>
+              </div>
+
+              <!-- 🛡️ GDPR Selective Forget Mode -->
+              <div class="forget-container" style="margin-top: 15px;">
+                <h5>✂️ GDPR Memory Forget Mode</h5>
+                <input type="text" id="forget-keywords" placeholder="Keywords to erase (comma separated)" style="width:100%; font-size:12px; padding:6px; box-sizing:border-box; margin-bottom:6px; background:var(--bg-900); border:1px solid var(--border-subtle); border-radius:4px; color:var(--text-100);">
+                <button class="btn-secondary" id="btn-forget-purge" style="width:100%; font-size:11px; padding:6px; background:#ef4444; color:#fff; border:none; border-radius:4px; cursor:pointer;">Erase Selected Nodes</button>
+              </div>
+            </div>
+            
+            <div class="dreamspace-canvas-wrapper">
+              <h5>🧬 AI Dreamspace Mind-Map</h5>
+              <canvas id="dreamspace-canvas" width="600" height="400"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE 3: Workflow Automation -->
+        <div id="automation-pane" class="tab-pane">
+          <div class="automation-panel-container">
+            <div class="automation-creator">
+              <h4>⚡ Create Natural Language Trigger</h4>
+              <div class="form-group">
+                <label>Workflow Name:</label>
+                <input type="text" id="wf-name" placeholder="e.g., Morning AI Summary">
+              </div>
+              <div class="form-group">
+                <label>Trigger Condition:</label>
+                <input type="text" id="wf-trigger" placeholder="e.g., At 9:00 AM daily">
+              </div>
+              <div class="form-group">
+                <label>Action Steps (comma separated):</label>
+                <input type="text" id="wf-actions" placeholder="e.g., Get tech news, Summarize, Post to Discord">
+              </div>
+              <button class="btn-primary" id="btn-create-wf">Register Automation Workflow</button>
+            </div>
+            <div class="automation-list-wrapper">
+              <h4>⚙️ Active Workflows (Zapier/n8n)</h4>
+              <div id="workflows-list" class="workflows-list-grid">
+                <div class="wf-card">
+                  <div class="wf-card-header">
+                    <h5>Morning Summary</h5>
+                    <span class="wf-status active">Active</span>
+                  </div>
+                  <p><strong>Trigger:</strong> At 9:00 AM daily</p>
+                  <p><strong>Actions:</strong> Summarize news, Send Slack alert</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE 4: Creator & Coder Studio -->
+        <div id="creator-pane" class="tab-pane">
+          <div class="creator-panel-container">
+            <!-- Left Column: Social Media Content & App builder -->
+            <div class="creator-left-column">
+              <!-- AI Content Studio Card -->
+              <div class="creator-card">
+                <h4>📱 AI Influencer Content Studio</h4>
+                <div class="form-group">
+                  <label>Topic / Concept:</label>
+                  <input type="text" id="studio-topic" placeholder="e.g., Secret productivity hack for developers">
+                </div>
+                <div class="form-group">
+                  <label>Platform:</label>
+                  <select id="studio-platform" class="header-select" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px;">
+                    <option value="reels">Instagram Reels / TikTok</option>
+                    <option value="twitter">Twitter / X Thread</option>
+                    <option value="instagram">Instagram Carousel Script</option>
+                  </select>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                  <button class="btn-primary" id="btn-studio-generate" style="flex: 1;">Generate Hooks & Script</button>
+                  <button class="btn-secondary" id="btn-studio-viral" style="flex: 1;">Scan Viral Trends</button>
+                </div>
+                <div id="studio-output" class="console-box" style="margin-top: 12px; display: none;"></div>
+              </div>
+
+              <!-- AI HTML App Builder Card -->
+              <div class="creator-card" style="margin-top: 15px;">
+                <h4>💻 Dynamic App Builder (No-Code Deploy)</h4>
+                <div class="form-group">
+                  <label>Filename (HTML):</label>
+                  <input type="text" id="builder-filename" placeholder="e.g., index_landing.html">
+                </div>
+                <div class="form-group">
+                  <label>Page Prompt or Custom HTML Code:</label>
+                  <textarea id="builder-code" rows="4" placeholder="e.g., Create a neon-cyan gaming website landing page with interactive elements." style="width: 100%; border-radius: 6px; background: var(--bg-900); border: 1px solid var(--border-subtle); color: var(--text-200); font-family: monospace; font-size: 13px; padding: 8px; box-sizing: border-box; resize: vertical;"></textarea>
+                </div>
+                <button class="btn-primary" id="btn-builder-deploy" style="width: 100%;">Write Code & Deploy Locally</button>
+                <div id="builder-output" class="console-box" style="margin-top: 12px; display: none;"></div>
+              </div>
+
+              <!-- 🎭 Custom Persona Studio & Cognitive Modes -->
+              <div class="creator-card" style="margin-top: 15px;">
+                <h4>🎭 Custom Persona Studio & Cognitive Modes</h4>
+                <div class="form-group">
+                  <label>Change Global Vibe / Roleplay Mode:</label>
+                  <select id="select-global-mood" class="header-select" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                    <option value="normal">Normal Affirmative devoteness</option>
+                    <option value="chill">Chill best-friend slang talk</option>
+                    <option value="engineer">Strict code analyzer</option>
+                    <option value="therapy">Therapist listener</option>
+                    <option value="roast">Brutal logical roasting critic</option>
+                    <option value="debate">Debate Devil's advocate partner</option>
+                    <option value="socratic">Guiding Socratic questioner</option>
+                    <option value="mentor">Wise startup director/architect</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                  <label>Install Custom Personality Prompt (Lore Engine):</label>
+                  <textarea id="custom-prompt-lore" rows="2" placeholder="e.g. You are a sassy cyberpunk AI who loves writing javascript macros..." style="width: 100%; border-radius: 6px; background: var(--bg-900); border: 1px solid var(--border-subtle); color: var(--text-200); font-family: monospace; font-size: 12px; padding: 6px; box-sizing: border-box;"></textarea>
+                </div>
+                <button class="btn-primary" id="btn-save-lore" style="width: 100%;">Commit Custom Lore Engine Prompt</button>
+              </div>
+            </div>
+
+            <!-- Right Column: Code Copilot & Remote Computer Control -->
+            <div class="creator-right-column">
+              <!-- Codebase Copilot / Refactor Card -->
+              <div class="creator-card">
+                <h4>💻 Autonomous Coder Copilot</h4>
+                <div class="form-group">
+                  <label>File Path in Workspace:</label>
+                  <input type="text" id="coder-filepath" placeholder="e.g., src/core/router.js">
+                </div>
+                <div class="form-group">
+                  <label>Refactor Instructions / Code Replacement Content:</label>
+                  <textarea id="coder-content" rows="3" placeholder="Paste modified code or write refactoring directives..." style="width: 100%; border-radius: 6px; background: var(--bg-900); border: 1px solid var(--border-subtle); color: var(--text-200); font-family: monospace; font-size: 13px; padding: 8px; box-sizing: border-box; resize: vertical;"></textarea>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button class="btn-primary" id="btn-coder-read" style="flex: 1;">Read File</button>
+                  <button class="btn-secondary" id="btn-coder-analyze" style="flex: 1;">Audit Syntax</button>
+                  <button class="btn-primary" id="btn-coder-write" style="background: var(--accent-500); flex: 1;">Save Edits</button>
+                </div>
+                <div id="coder-output" class="console-box" style="margin-top: 12px; display: none;"></div>
+              </div>
+
+              <!-- Windows Native Computer Control -->
+              <div class="creator-card" style="margin-top: 15px;">
+                <h4>🖥️ Host Remote System Control</h4>
+                <div class="control-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <div class="form-group">
+                    <label>Mouse Coordinates (X, Y):</label>
+                    <div style="display: flex; gap: 4px;">
+                      <input type="number" id="ctrl-x" placeholder="X" style="width: 50%;">
+                      <input type="number" id="ctrl-y" placeholder="Y" style="width: 50%;">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label>Launch Executable:</label>
+                    <input type="text" id="ctrl-exe" placeholder="e.g. calc.exe">
+                  </div>
+                </div>
+                <div class="form-group" style="margin-top: 6px;">
+                  <label>Keyboard Inputs (Text/Shortcuts):</label>
+                  <input type="text" id="ctrl-keys" placeholder="e.g. Hello World or ^s">
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px;">
+                  <button class="btn-primary" id="btn-ctrl-screenshot" title="Capture Desktop Screen" style="padding: 6px;">📸 Screen</button>
+                  <button class="btn-secondary" id="btn-ctrl-click" title="Move cursor and Click Mouse" style="padding: 6px;">🖱️ Click</button>
+                  <button class="btn-secondary" id="btn-ctrl-keys" title="Send keypress inputs" style="padding: 6px;">⌨️ Key</button>
+                  <button class="btn-primary" id="btn-ctrl-exe" title="Start Application" style="padding: 6px;">🚀 Run</button>
+                </div>
+                <div id="ctrl-output" class="console-box" style="margin-top: 12px; display: none;"></div>
+                <div id="ctrl-screenshot-preview" style="margin-top: 10px; text-align: center; display: none;">
+                  <h6 style="color: var(--text-400); margin-bottom: 4px;">📸 Desktop Live Feed:</h6>
+                  <img id="live-screenshot-img" src="" alt="Desktop Screenshot" style="max-width: 100%; border-radius: 6px; border: 1px solid var(--border-subtle); box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+                </div>
+              </div>
+
+              <!-- ⏳ Time Capsule Messages -->
+              <div class="creator-card" style="margin-top: 15px;">
+                <h4>⏳ Time Capsule Scheduler</h4>
+                <div class="form-group">
+                  <label>Message to your Future Self:</label>
+                  <input type="text" id="capsule-msg" placeholder="e.g. Remember to review your math goals and coding roadmaps!" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                </div>
+                <div class="form-group" style="margin-top: 8px;">
+                  <label>Deliver Date:</label>
+                  <input type="date" id="capsule-date" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                </div>
+                <button class="btn-primary" id="btn-capsule-schedule" style="width: 100%; margin-top: 8px;">Seal Time Capsule Message</button>
+              </div>
+
+              <!-- ⚡ Custom Slash Command & Macro Chain Builder -->
+              <div class="creator-card" style="margin-top: 15px;">
+                <h4>⚡ Custom Slash Commands & Macro Chains</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <div class="form-group">
+                    <label>Command (e.g. /mycmd):</label>
+                    <input type="text" id="slash-cmd-trigger" placeholder="/mycmd" style="width: 100%;">
+                  </div>
+                  <div class="form-group">
+                    <label>Assigned Prompt Directive:</label>
+                    <input type="text" id="slash-cmd-prompt" placeholder="Act as coding coach..." style="width: 100%;">
+                  </div>
+                </div>
+                <button class="btn-secondary" id="btn-create-slash" style="width: 100%; margin-top: 8px;">Register Custom Slash Command</button>
+              </div>
+
+              <!-- 💻 JS Code Sandbox Executor -->
+              <div class="creator-card" style="margin-top: 15px;">
+                <h4>💻 JS Execution Sandbox (In-Browser Virtual Console)</h4>
+                <div class="form-group">
+                  <label>JavaScript Sandbox Code:</label>
+                  <textarea id="sandbox-code" rows="4" placeholder="console.log('Testing logic output...');" style="width: 100%; border-radius: 6px; background: var(--bg-900); border: 1px solid var(--border-subtle); color: var(--text-200); font-family: monospace; font-size: 13px; padding: 8px; box-sizing: border-box; resize: vertical;"></textarea>
+                </div>
+                <button class="btn-primary" id="btn-sandbox-run" style="width: 100%;">Evaluate Sandbox Code</button>
+                <div id="sandbox-output" class="console-box" style="margin-top: 12px; display: none;"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Input Area -->
       <div class="input-area">
+        <!-- Image Preview Container -->
+        <div id="image-preview-container" class="image-preview-container" style="display: none;">
+          <img id="image-preview" src="" alt="Preview">
+          <button id="btn-cancel-image" class="btn-cancel-image" title="Remove image">&times;</button>
+        </div>
+
+        <!-- File Preview Container -->
+        <div id="file-preview-container" class="file-preview-container" style="display: none;">
+          <div class="file-preview-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <div class="file-info-text">
+              <span id="file-preview-name" class="file-name">filename.txt</span>
+              <span id="file-preview-size" class="file-size">1.2 KB</span>
+            </div>
+            <button id="btn-cancel-file" class="btn-cancel-file" title="Remove file">&times;</button>
+          </div>
+        </div>
+
         <div class="input-wrapper">
           <textarea id="message-input" placeholder="Message Alya..." rows="1" autofocus></textarea>
           <div class="input-actions">
+            <!-- Hidden Image File Input -->
+            <input type="file" id="image-upload" accept="image/*" style="display: none;">
+            <!-- Hidden Document File Input -->
+            <input type="file" id="file-upload" accept=".txt,.js,.py,.json,.css,.html,.log,.md" style="display: none;">
+            <!-- Attachment Button -->
+            <button class="btn-attach" id="btn-attach" title="Attach image or text file">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            </button>
             <button class="btn-voice" id="btn-voice" title="Voice input">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
               <div class="voice-pulse"></div>
@@ -117,9 +566,8 @@
           </div>
         </div>
         <div class="voice-indicator" id="voice-indicator">
-          <div class="voice-bars">
-            <span></span><span></span><span></span><span></span><span></span>
-          </div>
+          <!-- Voice Visualizer Canvas -->
+          <canvas id="voice-canvas" class="voice-canvas"></canvas>
           <span class="voice-text">Listening...</span>
           <button class="voice-stop" id="voice-stop">Stop</button>
         </div>

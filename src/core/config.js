@@ -125,7 +125,16 @@ export function loadConfig() {
     if (process.env.ELEVENLABS_API_KEY) {
       if (!cachedConfig.elevenlabs) cachedConfig.elevenlabs = { enabled: true, apiKeys: [] };
       cachedConfig.elevenlabs.enabled = true;
-      cachedConfig.elevenlabs.apiKeys = [process.env.ELEVENLABS_API_KEY];
+      if (process.env.ELEVENLABS_API_KEY.includes(",")) {
+        cachedConfig.elevenlabs.apiKeys = process.env.ELEVENLABS_API_KEY.split(",").map(k => k.trim()).filter(Boolean);
+      } else {
+        cachedConfig.elevenlabs.apiKeys = [process.env.ELEVENLABS_API_KEY];
+      }
+    }
+    if (process.env.ELEVENLABS_API_KEYS) {
+      if (!cachedConfig.elevenlabs) cachedConfig.elevenlabs = { enabled: true, apiKeys: [] };
+      cachedConfig.elevenlabs.enabled = true;
+      cachedConfig.elevenlabs.apiKeys = process.env.ELEVENLABS_API_KEYS.split(",").map(k => k.trim()).filter(Boolean);
     }
     if (process.env.ELEVENLABS_VOICE_ID) {
       if (!cachedConfig.elevenlabs) cachedConfig.elevenlabs = {};

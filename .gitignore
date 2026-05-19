@@ -3,3 +3,4 @@ config/config.json
 data/
 *.log
 .DS_Store
+scratch/

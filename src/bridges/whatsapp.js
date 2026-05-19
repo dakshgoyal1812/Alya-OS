@@ -40,7 +40,6 @@ export class WhatsAppBridge {
             "--disable-extensions", 
             "--disable-dev-shm-usage",
             "--no-zygote",
-            "--single-process",
             "--disable-software-rasterizer",
             "--mute-audio",
             "--no-first-run",
@@ -53,7 +52,6 @@ export class WhatsAppBridge {
             "--disable-client-side-phishing-detection",
             "--disable-component-update",
             "--disable-site-isolation-trials",
-            "--js-flags=--max-old-space-size=128",
             "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
           ] 
         },

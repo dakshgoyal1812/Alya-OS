@@ -9,7 +9,7 @@ let triedKeys = new Set();
 /**
  * Generates an MP3 file from text using ElevenLabs API with multi-key failover.
  */
-export async function generateTTS(text) {
+export async function generateTTS(text, voiceIdOverride = null) {
   const config = loadConfig();
   const keys = config.elevenlabs?.apiKeys?.filter(k => k && !k.includes("PASTE")) || [];
   
@@ -19,7 +19,7 @@ export async function generateTTS(text) {
   }
 
   const apiKey = keys[currentElevenLabsKeyIndex];
-  const voiceId = config.elevenlabs.voiceId || "9BWtsMINHqgu8Vj69vS2"; // Default: Aria (Soft & Gentle)
+  const voiceId = voiceIdOverride || config.elevenlabs.voiceId || "9BWtsMINHqgu8Vj69vS2"; // Default: Aria (Soft & Gentle)
   
   try {
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {

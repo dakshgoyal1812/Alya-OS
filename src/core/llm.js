@@ -1,12 +1,60 @@
 // ============================================================
-// 🧠 LLM Engine — Ollama Integration
-// Handles all communication with the local Ollama instance
+// 🧠 LLM Engine — Groq Cloud Integration
+// Handles all communication with Groq API with smart limits
 // ============================================================
 
 import { getSystemPrompt, getErrorMessage } from "./personality.js";
 import { loadConfig } from "./config.js";
 import { availableTools, executeTool } from "./tools.js";
 import OpenAI from "openai";
+
+// Import Advanced AI features
+import { ModelRouter } from "./router.js";
+import { ThinkingEngine } from "./reflection.js";
+import { AgentSwarm } from "./swarm.js";
+import { AdvancedMemoryEngine } from "./advanced_memory.js";
+
+// --- Token & Context Constants ---
+const MAX_RESPONSE_TOKENS = 4096;
+const MAX_CONTEXT_TOKENS = 28000; // Safe limit for llama-3.3-70b (32k context)
+const FALLBACK_MODEL = "llama-3.1-8b-instant";
+const API_TIMEOUT_MS = 60000; // 60 seconds
+const MAX_HISTORY_MESSAGES = 10; // Keep history lean for heavy tasks
+
+/**
+ * Rough token estimator (~4 chars per token for English, ~3 for mixed)
+ */
+function estimateTokens(text) {
+  if (!text) return 0;
+  return Math.ceil(text.length / 3.5);
+}
+
+/**
+ * Trim messages array to fit within token budget
+ */
+function trimMessagesToFit(messages, maxTokens) {
+  // Always keep the system message (first) and user message (last)
+  if (messages.length <= 2) return messages;
+
+  const systemMsg = messages[0];
+  const userMsg = messages[messages.length - 1];
+  const middleMessages = messages.slice(1, -1);
+
+  let totalTokens = estimateTokens(systemMsg.content) + estimateTokens(userMsg.content);
+  // Reserve tokens for tools definition overhead (~2000 tokens)
+  totalTokens += 2000;
+
+  const kept = [];
+  // Keep messages from most recent to oldest
+  for (let i = middleMessages.length - 1; i >= 0; i--) {
+    const msgTokens = estimateTokens(middleMessages[i].content);
+    if (totalTokens + msgTokens > maxTokens) break;
+    totalTokens += msgTokens;
+    kept.unshift(middleMessages[i]);
+  }
+
+  return [systemMsg, ...kept, userMsg];
+}
 
 export class LLMEngine {
   constructor() {
@@ -21,11 +69,21 @@ export class LLMEngine {
     
     this.currentKeyIndex = 0;
     this.model = config.groq?.model || "llama-3.3-70b-versatile";
+    this.fallbackModel = FALLBACK_MODEL;
     this.temperature = 0.7;
+    this.maxTokens = MAX_RESPONSE_TOKENS;
     
     // Initialize OpenAI client with the first key
     this._initClient();
     console.log(`🔑 Groq API: ${this.apiKeys.length} key(s) loaded (failover ${this.apiKeys.length > 1 ? 'enabled' : 'disabled'})`);
+
+    // Instantiate Advanced Upgrades
+    this.router = new ModelRouter();
+    this.reflector = new ThinkingEngine(this);
+    this.swarm = new AgentSwarm(this);
+    this.cognitiveMemory = new AdvancedMemoryEngine();
+    this.mood = "normal";
+    this.customLore = "";
   }
 
   /**
@@ -101,6 +159,14 @@ export class LLMEngine {
     return [{name: "llama-3.3-70b-versatile"}, {name: "llama-3.1-8b-instant"}];
   }
 
+  _getSystemPromptText() {
+    let promptText = getSystemPrompt(this.mood || "normal");
+    if (this.customLore) {
+      promptText += `\n\n## CUSTOM USER PERSONALITY LORE:\n${this.customLore}`;
+    }
+    return promptText;
+  }
+
   async chat(conversationHistory = [], userMessage) {
     const sanitizedHistory = conversationHistory.map(msg => ({
       role: msg.role,
@@ -110,24 +176,34 @@ export class LLMEngine {
       ...(msg.name && { name: msg.name })
     }));
     
-    const messages = [
-      { role: "system", content: getSystemPrompt("normal") },
-      ...sanitizedHistory.slice(-20),
+    let messages = [
+      { role: "system", content: this._getSystemPromptText() },
+      ...sanitizedHistory.slice(-MAX_HISTORY_MESSAGES),
       { role: "user", content: userMessage },
     ];
+    // Smart trim to fit context window
+    messages = trimMessagesToFit(messages, MAX_CONTEXT_TOKENS);
     return await this._processChat(messages);
   }
 
-  async _processChat(messages, depth = 0) {
+  async _processChat(messages, depth = 0, useFallback = false) {
     if (depth > 5) return "✨ ...I'm thinking too much. Let's stop here.";
 
+    const model = useFallback ? this.fallbackModel : this.model;
+
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
       const response = await this.openai.chat.completions.create({
-        model: this.model,
+        model,
         messages,
         tools: availableTools,
         temperature: this.temperature,
-      });
+        max_tokens: this.maxTokens,
+      }, { signal: controller.signal });
+
+      clearTimeout(timeout);
 
       const msg = response.choices[0].message;
       this._resetKeyTracker(); // Success — reset key tracker
@@ -164,16 +240,39 @@ export class LLMEngine {
          return await this._processChat(messages, depth + 1);
       }
 
+      // Handle Markdown JSON tool leaks
+      const jsonToolMatch = rawContent.match(/```(?:json)?\s*(\{[\s\S]*?"tool"\s*:\s*"([^"]+)"[\s\S]*?\})\s*```/) || rawContent.match(/^(\{[\s\S]*?"tool"\s*:\s*"([^"]+)"[\s\S]*?\})$/m);
+      if (jsonToolMatch) {
+         const toolName = jsonToolMatch[2].trim();
+         let args = {};
+         try { 
+           args = JSON.parse(jsonToolMatch[1]); 
+           delete args.tool; // Remove the tool key since we only pass args
+         } catch(e) {}
+         messages.push(msg);
+         const result = await executeTool(toolName, args);
+         messages.push({ role: "user", content: `[System Tool Result: ${result}]\nNow finish your answer.` });
+         return await this._processChat(messages, depth + 1);
+      }
+
       return cleanResponse(msg.content) || getErrorMessage("llm_error");
     } catch (error) {
       const errMsg = error?.message || String(error);
       const errStatus = error?.status || error?.response?.status || 'N/A';
-      console.error(`Groq chat error [status=${errStatus}]: ${errMsg}`);
+      console.error(`Groq chat error [model=${model}, status=${errStatus}]: ${errMsg}`);
 
       // Try switching to backup key on quota/rate-limit errors
       if (this._isQuotaError(error) && this._switchToNextKey()) {
         console.warn(`⚠️ Quota hit on key ${this.currentKeyIndex}. Retrying with backup key...`);
-        return await this._processChat(messages, depth);
+        return await this._processChat(messages, depth, useFallback);
+      }
+
+      // Auto-fallback to smaller model on token/context overflow or heavy-task failures
+      if (!useFallback && (errMsg.includes("token") || errMsg.includes("context_length") || errMsg.includes("too many tokens") || errMsg.includes("maximum context") || error.status === 413)) {
+        console.warn(`⚠️ Token overflow on ${this.model}. Falling back to ${this.fallbackModel}...`);
+        // Also aggressively trim history for the fallback
+        const trimmedMessages = trimMessagesToFit(messages, 6000);
+        return await this._processChat(trimmedMessages, depth, true);
       }
       
       // Handle Groq's strict tool validation crash
@@ -181,14 +280,21 @@ export class LLMEngine {
         console.warn("⚠️ Groq tool parser failed. Auto-recovering without tools...");
         try {
           const fallbackResponse = await this.openai.chat.completions.create({
-            model: this.model,
+            model,
             messages,
             temperature: this.temperature,
+            max_tokens: this.maxTokens,
           });
           return cleanResponse(fallbackResponse.choices[0].message.content) || getErrorMessage("llm_error");
         } catch (fallbackError) {
            console.error("Groq fallback error:", fallbackError.message);
         }
+      }
+
+      // If primary model fails for any 400 error on heavy tasks, try fallback model
+      if (!useFallback && error.status === 400) {
+        console.warn(`⚠️ Primary model failed (400). Trying fallback model ${this.fallbackModel}...`);
+        return await this._processChat(messages, depth, true);
       }
 
       // Retry transient network errors (timeouts, connection resets, DNS failures)
@@ -198,15 +304,54 @@ export class LLMEngine {
         this._retryCount++;
         console.warn(`🔄 Transient error. Retrying attempt ${this._retryCount}/3 in 2s...`);
         await new Promise(r => setTimeout(r, 2000));
-        return await this._processChat(messages, depth);
+        return await this._processChat(messages, depth, useFallback);
       }
       this._retryCount = 0;
 
+      // Return a more helpful error message based on what happened
+      if (this._isQuotaError(error)) return getErrorMessage("rate_limit");
       return getErrorMessage("llm_error");
     }
   }
 
-  async chatStream(conversationHistory = [], userMessage, onChunk) {
+  async chatStream(conversationHistory = [], userMessage, onChunk, options = {}) {
+    // Record interaction in cognitive memory
+    this.cognitiveMemory.recordInteraction(userMessage);
+
+    // Simple sentiment tracking
+    const lowerMessage = userMessage.toLowerCase();
+    let frust = 0, stress = 0, exc = 0, conf = 0;
+    if (lowerMessage.includes("stupid") || lowerMessage.includes("useless") || lowerMessage.includes("hate") || lowerMessage.includes("bug")) frust = 0.3;
+    if (lowerMessage.includes("urgent") || lowerMessage.includes("help") || lowerMessage.includes("immediately")) stress = 0.2;
+    if (lowerMessage.includes("amazing") || lowerMessage.includes("wow") || lowerMessage.includes("cool") || lowerMessage.includes("love")) exc = 0.4;
+    if (lowerMessage.includes("why") || lowerMessage.includes("what does") || lowerMessage.includes("how does")) conf = 0.1;
+    this.cognitiveMemory.updateEmotionalState(frust, stress, exc, conf);
+
+    const emotionalGuidelines = this.cognitiveMemory.getEmotionalToneGuidelines();
+
+    // Swarm Mode
+    if (options.swarmMode) {
+      if (onChunk) onChunk("🐝 **[Swarm Mode: Multi-Agent Collaboration Active]**\nPlanner, Researcher, Coder, Designer, and Security agents assemble!\n");
+      const swarmResult = await this.swarm.executeSwarm(userMessage, (step) => {
+        if (onChunk) {
+          onChunk(`\n🤖 **[${step.agent}]**: *${step.content}*\n`);
+        }
+      });
+      return swarmResult;
+    }
+
+    // Reflection Mode
+    if (options.thinkingMode === "reflection") {
+      return this.reflector.runReflection(conversationHistory, userMessage, onChunk);
+    }
+    if (options.thinkingMode === "tree") {
+      return this.reflector.runTreeOfThoughts(conversationHistory, userMessage, onChunk);
+    }
+
+    // Router selection
+    const activeModelKey = this.router.route(userMessage, options.routingMode || "intelligence");
+    const activeModel = this.router.MODEL_DIRECTORY[activeModelKey]?.name || this.model;
+
     const sanitizedHistory = conversationHistory.map(msg => ({
       role: msg.role,
       content: msg.content,
@@ -215,23 +360,46 @@ export class LLMEngine {
       ...(msg.name && { name: msg.name })
     }));
 
-    const messages = [
-      { role: "system", content: getSystemPrompt("normal") },
-      ...sanitizedHistory.slice(-20),
+    // Inject sentiment guidelines
+    const systemPromptText = this._getSystemPromptText() + "\n" + emotionalGuidelines;
+
+    let messages = [
+      { role: "system", content: systemPromptText },
+      ...sanitizedHistory.slice(-MAX_HISTORY_MESSAGES),
       { role: "user", content: userMessage },
     ];
-    return await this._processChatStream(messages, onChunk);
+    // Smart trim to fit context window
+    messages = trimMessagesToFit(messages, MAX_CONTEXT_TOKENS);
+
+    const originalModel = this.model;
+    this.model = activeModel;
+
+    const startTime = Date.now();
+    try {
+      if (onChunk) onChunk(`🧠 *[Routing task to: ${activeModelKey} (${activeModel})]*\n\n`);
+      const result = await this._processChatStream(messages, onChunk);
+      const latency = Date.now() - startTime;
+      this.router.recordBenchmark(activeModelKey, latency, estimateTokens(result));
+      this.model = originalModel;
+      return result;
+    } catch (err) {
+      this.model = originalModel;
+      throw err;
+    }
   }
 
-  async _processChatStream(messages, onChunk, depth = 0) {
+  async _processChatStream(messages, onChunk, depth = 0, useFallback = false) {
     if (depth > 5) return "✨ ...I got stuck in a loop.";
+
+    const model = useFallback ? this.fallbackModel : this.model;
 
     try {
       const stream = await this.openai.chat.completions.create({
-        model: this.model,
+        model,
         messages,
         tools: availableTools,
         temperature: this.temperature,
+        max_tokens: this.maxTokens,
         stream: true,
       });
 
@@ -280,7 +448,7 @@ export class LLMEngine {
           messages.push({ tool_call_id: tc.id, role: "tool", content: result });
         }
         
-        return await this._processChatStream(messages, onChunk, depth + 1);
+        return await this._processChatStream(messages, onChunk, depth + 1, useFallback);
       }
 
       // Handle raw XML leaks from Llama 3
@@ -294,29 +462,55 @@ export class LLMEngine {
          messages.push({ role: "assistant", content: fullResponse });
          const result = await executeTool(toolName, args);
          messages.push({ role: "user", content: `[System Tool Result: ${result}]\nNow finish your answer.` });
-         return await this._processChatStream(messages, onChunk, depth + 1);
+         return await this._processChatStream(messages, onChunk, depth + 1, useFallback);
+      }
+
+      // Handle Markdown JSON tool leaks
+      const jsonToolMatch = fullResponse.match(/```(?:json)?\s*(\{[\s\S]*?"tool"\s*:\s*"([^"]+)"[\s\S]*?\})\s*```/) || fullResponse.match(/^(\{[\s\S]*?"tool"\s*:\s*"([^"]+)"[\s\S]*?\})$/m);
+      if (jsonToolMatch) {
+         const toolName = jsonToolMatch[2].trim();
+         let args = {};
+         try { 
+           args = JSON.parse(jsonToolMatch[1]); 
+           delete args.tool; 
+         } catch(e) {}
+         
+         if (onChunk) onChunk("\n✨ *Right away, Master. Working on it...*\n");
+         messages.push({ role: "assistant", content: fullResponse });
+         const result = await executeTool(toolName, args);
+         messages.push({ role: "user", content: `[System Tool Result: ${result}]\nNow finish your answer.` });
+         return await this._processChatStream(messages, onChunk, depth + 1, useFallback);
       }
 
       return cleanResponse(fullResponse) || getErrorMessage("llm_error");
     } catch (error) {
       const errMsg = error?.message || String(error);
       const errStatus = error?.status || error?.response?.status || 'N/A';
-      console.error(`Groq stream error [status=${errStatus}]: ${errMsg}`);
+      console.error(`Groq stream error [model=${model}, status=${errStatus}]: ${errMsg}`);
 
       // Try switching to backup key on quota/rate-limit errors
       if (this._isQuotaError(error) && this._switchToNextKey()) {
         console.warn(`⚠️ Quota hit on key ${this.currentKeyIndex}. Retrying stream with backup key...`);
-        return await this._processChatStream(messages, onChunk, depth);
+        return await this._processChatStream(messages, onChunk, depth, useFallback);
+      }
+
+      // Auto-fallback to smaller model on token/context overflow
+      if (!useFallback && (errMsg.includes("token") || errMsg.includes("context_length") || errMsg.includes("too many tokens") || errMsg.includes("maximum context") || error.status === 413)) {
+        console.warn(`⚠️ Token overflow on ${this.model}. Falling back to ${this.fallbackModel} for stream...`);
+        if (onChunk) onChunk("\n✨ *Switching to faster brain for this heavy task...*\n");
+        const trimmedMessages = trimMessagesToFit(messages, 6000);
+        return await this._processChatStream(trimmedMessages, onChunk, depth, true);
       }
 
       // Handle Groq's strict tool validation crash in streams
-      if (error.status === 400) {
+      if (error.status === 400 && errMsg.includes("Failed to call a function")) {
         console.warn("⚠️ Groq tool parser failed in stream. Auto-recovering without tools...");
         try {
           const fallbackStream = await this.openai.chat.completions.create({
-            model: this.model,
+            model,
             messages,
             temperature: this.temperature,
+            max_tokens: this.maxTokens,
             stream: true,
           });
           let fullFallback = "";
@@ -333,6 +527,13 @@ export class LLMEngine {
         }
       }
 
+      // If primary model fails for any 400 error, try fallback model
+      if (!useFallback && error.status === 400) {
+        console.warn(`⚠️ Primary model stream failed (400). Trying fallback model ${this.fallbackModel}...`);
+        if (onChunk) onChunk("\n✨ *Retrying with a different approach...*\n");
+        return await this._processChatStream(messages, onChunk, depth, true);
+      }
+
       // Retry transient network errors
       if (!this._streamRetryCount) this._streamRetryCount = 0;
       const isTransient = !error.status || error.status >= 500 || errMsg.includes("fetch") || errMsg.includes("ETIMEDOUT") || errMsg.includes("ECONNRESET") || errMsg.includes("socket") || errMsg.includes("network") || errMsg.includes("abort");
@@ -340,20 +541,28 @@ export class LLMEngine {
         this._streamRetryCount++;
         console.warn(`🔄 Stream transient error. Retrying attempt ${this._streamRetryCount}/3 in 2s...`);
         await new Promise(r => setTimeout(r, 2000));
-        return await this._processChatStream(messages, onChunk, depth);
+        return await this._processChatStream(messages, onChunk, depth, useFallback);
       }
       this._streamRetryCount = 0;
 
+      // Return a more helpful error message
+      if (this._isQuotaError(error)) return getErrorMessage("rate_limit");
       return getErrorMessage("llm_error");
     }
   }
 
   async generate(prompt) {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
       const response = await this.openai.chat.completions.create({
         model: this.model,
-        messages: [{ role: "system", content: getSystemPrompt("normal") }, { role: "user", content: prompt }],
-      });
+        messages: [{ role: "system", content: this._getSystemPromptText() }, { role: "user", content: prompt }],
+        max_tokens: this.maxTokens,
+      }, { signal: controller.signal });
+
+      clearTimeout(timeout);
       this._resetKeyTracker(); // Success — reset key tracker
       return cleanResponse(response.choices[0].message.content) || getErrorMessage("llm_error");
     } catch (error) {
@@ -361,6 +570,21 @@ export class LLMEngine {
       if (this._isQuotaError(error) && this._switchToNextKey()) {
         console.warn(`⚠️ Quota hit. Retrying generate with backup key...`);
         return await this.generate(prompt);
+      }
+      // Fallback to smaller model on token errors
+      const errMsg = error?.message || "";
+      if (errMsg.includes("token") || errMsg.includes("context_length")) {
+        console.warn(`⚠️ Token overflow on generate. Trying ${this.fallbackModel}...`);
+        try {
+          const fallback = await this.openai.chat.completions.create({
+            model: this.fallbackModel,
+            messages: [{ role: "system", content: this._getSystemPromptText() }, { role: "user", content: prompt.substring(0, 8000) }],
+            max_tokens: this.maxTokens,
+          });
+          return cleanResponse(fallback.choices[0].message.content) || getErrorMessage("llm_error");
+        } catch (e) {
+          console.error("Fallback generate error:", e.message);
+        }
       }
       return getErrorMessage("llm_error");
     }

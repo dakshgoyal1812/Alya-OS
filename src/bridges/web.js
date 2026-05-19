@@ -8,8 +8,42 @@ import { getHistory, addMessage, clearHistory, getStats } from "../core/memory.j
 import { getRandomGreeting, SERVICE_CONNECT_MESSAGES } from "../core/personality.js";
 import { generateTTS } from "../core/tts.js";
 import path from "path";
+import os from "os";
+import fs from "fs";
+
+import { AutomationEngine } from "../core/automation.js";
+import { CognitiveMirrorEngine, DecisionFatigueDetector } from "../core/cognition.js";
+import { TimeCapsuleManager, ForgetModeManager, GrowthReportGenerator } from "../core/time_memory.js";
+import { WorkflowSuperpowersManager } from "../core/workflows.js";
+import { AdvancedMemoryEngine } from "../core/advanced_memory.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// CPU tick difference calculation state
+let lastCpuInfo = getCpuTimes();
+
+function getCpuTimes() {
+  const cpus = os.cpus();
+  let user = 0, nice = 0, sys = 0, idle = 0, irq = 0;
+  for (const cpu of cpus) {
+    user += cpu.times.user;
+    nice += cpu.times.nice;
+    sys += cpu.times.sys;
+    idle += cpu.times.idle;
+    irq += cpu.times.irq;
+  }
+  const total = user + nice + sys + idle + irq;
+  return { idle, total };
+}
+
+function getCpuUsage() {
+  const current = getCpuTimes();
+  const idleDiff = current.idle - lastCpuInfo.idle;
+  const totalDiff = current.total - lastCpuInfo.total;
+  lastCpuInfo = current;
+  if (totalDiff === 0) return 0;
+  return Math.round(100 - (100 * idleDiff / totalDiff));
+}
 
 export class WebBridge {
   constructor(config, bridges = {}) {
@@ -20,6 +54,16 @@ export class WebBridge {
     this.server = createServer(this.app);
     this.io = new Server(this.server, { cors: { origin: "*" } });
     this.isReady = false;
+    
+    // Automation engine instance
+    this.automation = new AutomationEngine(this.llm);
+    
+    // Cognitive, memory, and workflow instances
+    this.cognitiveMirror = new CognitiveMirrorEngine(this.llm);
+    this.fatigueDetector = new DecisionFatigueDetector();
+    this.timeCapsule = new TimeCapsuleManager();
+    this.workflows = new WorkflowSuperpowersManager();
+    this.memoryEngine = new AdvancedMemoryEngine();
   }
 
   async start() {
@@ -53,6 +97,120 @@ export class WebBridge {
       res.json({ bridges: statuses, stats: getStats() });
     });
 
+    // API: System stats for the dashboard widget
+    this.app.get("/api/system", (req, res) => {
+      try {
+        const totalMB = Math.round(os.totalmem() / 1024 / 1024);
+        const freeMB = Math.round(os.freemem() / 1024 / 1024);
+        const usedMB = totalMB - freeMB;
+        const ramPercent = Math.round((usedMB / totalMB) * 100);
+
+        res.json({
+          platform: os.platform(),
+          osType: os.type(),
+          arch: os.arch(),
+          cpuCores: os.cpus().length,
+          totalRAM: (totalMB / 1024).toFixed(1) + " GB",
+          usedRAM: (usedMB / 1024).toFixed(1) + " GB",
+          ramPercent: ramPercent,
+          cpuPercent: getCpuUsage()
+        });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    // API: Reminders for the dashboard widget
+    this.app.get("/api/reminders", (req, res) => {
+      try {
+        const remindersFile = join(process.cwd(), "data", "reminders.json");
+        let reminders = [];
+        if (fs.existsSync(remindersFile)) {
+          reminders = JSON.parse(fs.readFileSync(remindersFile, "utf-8"));
+        }
+        res.json({ reminders: reminders.slice(-5) }); // return last 5 reminders
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    // API: Delete reminder
+    this.app.post("/api/reminders/delete", (req, res) => {
+      try {
+        const { id } = req.body;
+        const remindersFile = join(process.cwd(), "data", "reminders.json");
+        if (fs.existsSync(remindersFile)) {
+          let reminders = JSON.parse(fs.readFileSync(remindersFile, "utf-8"));
+          reminders = reminders.filter(r => Number(r.id) !== Number(id));
+          fs.writeFileSync(remindersFile, JSON.stringify(reminders, null, 2));
+          res.json({ success: true });
+        } else {
+          res.status(404).json({ error: "No reminders file found" });
+        }
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+    // API: Get all workflows
+    this.app.get("/api/workflows", (req, res) => {
+      res.json({ workflows: this.automation.getWorkflows() });
+    });
+
+    // API: Create new workflow
+    this.app.post("/api/workflows", (req, res) => {
+      try {
+        const { name, trigger, actions } = req.body;
+        const newWf = this.automation.createWorkflow(name, trigger, actions);
+        res.json({ success: true, workflow: newWf });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    // API: Toggle workflow active state
+    this.app.post("/api/workflows/toggle", (req, res) => {
+      try {
+        const { id, active } = req.body;
+        this.automation.toggleWorkflow(id, active);
+        res.json({ success: true });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    // API: Delete workflow
+    this.app.post("/api/workflows/delete", (req, res) => {
+      try {
+        const { id } = req.body;
+        this.automation.deleteWorkflow(id);
+        res.json({ success: true });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    // API: Trigger workflow execution simulation
+    this.app.post("/api/workflows/trigger", async (req, res) => {
+      try {
+        const { id } = req.body;
+        const result = await this.automation.triggerWorkflow(id, (step) => {
+          this.io.emit("workflow_step", { id, ...step });
+        });
+        res.json({ success: true, result });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    // API: Get advanced cognitive memories
+    this.app.get("/api/cognitive", (req, res) => {
+      res.json(this.llm.cognitiveMemory.getCognitiveDb());
+    });
+
+    // API: Get model performance benchmarks
+    this.app.get("/api/benchmarks", (req, res) => {
+      res.json(this.llm.router.getBenchmarks());
+    });
     // API: Get WhatsApp QR Code
     this.app.get("/api/whatsapp/qr", (req, res) => {
       const wa = this.bridges.whatsapp;
@@ -60,6 +218,151 @@ export class WebBridge {
         return res.status(404).json({ error: "QR code not available yet. Please wait for initialization." });
       }
       res.redirect(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(wa.lastQR)}`);
+    });
+
+    // API: Direct execute backend tool from Creator/Coder dashboard
+    this.app.post("/api/tools/execute", async (req, res) => {
+      try {
+        const { name, args } = req.body;
+        const { executeTool } = await import("../core/tools.js");
+        const result = await executeTool(name, args || {});
+        res.json({ success: true, result });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    // 🔄 Render.com Free Tier Ephemeral Sync
+    this.app.get("/api/state/sync", (req, res) => {
+      try {
+        const payload = {
+          cognitiveProfile: this.cognitiveMirror.profile,
+          timeCapsules: this.timeCapsule.capsules,
+          workflows: this.workflows.state,
+          cognitiveDb: this.memoryEngine.getCognitiveDb()
+        };
+        res.json(payload);
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    this.app.post("/api/state/sync", (req, res) => {
+      try {
+        const { cognitiveProfile, timeCapsules, workflows, cognitiveDb } = req.body;
+        if (cognitiveProfile) {
+          this.cognitiveMirror.profile = cognitiveProfile;
+          this.cognitiveMirror._saveProfile();
+        }
+        if (timeCapsules) {
+          this.timeCapsule.capsules = timeCapsules;
+          this.timeCapsule._saveCapsules();
+        }
+        if (workflows) {
+          this.workflows.state = workflows;
+          this.workflows._saveState();
+        }
+        if (cognitiveDb) {
+          this.memoryEngine.db = cognitiveDb;
+          this.memoryEngine._saveCognitiveDb();
+        }
+        res.json({ success: true, message: "Render state re-hydrated successfully." });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    // 🧠 Multi-Agent Live Internal Debate
+    this.app.post("/api/cognition/debate", async (req, res) => {
+      try {
+        const { query } = req.body;
+        const debate = await this.cognitiveMirror.runInternalDebate(query);
+        res.json({ success: true, debate });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    // ⏳ Time Capsules
+    this.app.get("/api/timecapsule", (req, res) => {
+      res.json(this.timeCapsule.capsules);
+    });
+
+    this.app.post("/api/timecapsule", (req, res) => {
+      try {
+        const { message, deliverDate } = req.body;
+        const capsule = this.timeCapsule.scheduleCapsule(message, deliverDate);
+        res.json({ success: true, capsule });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    // ✂️ GDPR Memory Forget Mode
+    this.app.post("/api/memory/forget", (req, res) => {
+      try {
+        const { keywords } = req.body;
+        const db = this.memoryEngine.getCognitiveDb();
+        ForgetModeManager.purgeKeywords(db, keywords);
+        this.memoryEngine._saveCognitiveDb();
+        res.json({ success: true, db });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    // 📈 Growth report
+    this.app.get("/api/memory/growth", (req, res) => {
+      try {
+        const db = this.memoryEngine.getCognitiveDb();
+        const report = GrowthReportGenerator.generateReport(db);
+        res.json({ success: true, report });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    // ⚙️ Custom slash commands & macro chains
+    this.app.post("/api/workflows/slash", (req, res) => {
+      try {
+        const { trigger, prompt } = req.body;
+        const list = this.workflows.registerSlashCommand(trigger, prompt);
+        res.json({ success: true, slashCommands: list });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    this.app.post("/api/workflows/macro", (req, res) => {
+      try {
+        const { name, steps } = req.body;
+        const list = this.workflows.registerMacro(name, steps);
+        res.json({ success: true, macros: list });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    this.app.post("/api/workflows/email", async (req, res) => {
+      try {
+        const { email, tone } = req.body;
+        const prompt = WorkflowSuperpowersManager.getEmailGhostPrompt(email, tone);
+        const reply = await this.llm.generate(prompt);
+        res.json({ success: true, reply });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    this.app.post("/api/workflows/meeting", async (req, res) => {
+      try {
+        const { topic } = req.body;
+        const prompt = WorkflowSuperpowersManager.getMeetingPrepPrompt(topic);
+        const prep = await this.llm.generate(prompt);
+        res.json({ success: true, prep });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
     });
 
     // Socket.IO for real-time chat
@@ -76,21 +379,55 @@ export class WebBridge {
 
       // Handle chat messages
       socket.on("chat", async (data) => {
-        const { message } = data;
-        if (!message?.trim()) return;
+        const { message, image, mimeType, voiceId, options } = data;
+        if (!message?.trim() && !image) return;
+
+        let finalMessage = message || "";
+        
+        // 1. Process Slash Commands & Custom Macros
+        const triggerResult = this.workflows.processPromptTriggers(finalMessage);
+        finalMessage = triggerResult.prompt;
+        
+        // 2. Cognitive Mirror profiling
+        const dominantStyle = this.cognitiveMirror.detectStyleAndProfile(finalMessage);
+        
+        // 3. Contradiction Tracking (Check against First Principles stored in habits/relationships)
+        const principles = this.memoryEngine.getCognitiveDb().habits.map(h => h.habit);
+        const contradictions = this.cognitiveMirror.trackBeliefsAndContradictions(finalMessage, principles);
+        
+        // 4. Decision Fatigue warning
+        const isFatigued = this.fatigueDetector.recordQuery(finalMessage);
 
         const history = getHistory("web", sessionId);
+
+        // Prepend custom prompt modifiers if command trigger was used
+        if (triggerResult.modeModifier) {
+          finalMessage = triggerResult.modeModifier + finalMessage;
+        }
+
+        // Send cognitive context details to frontend for the Monologue Accordion
+        socket.emit("cognitive_state", {
+          dominantStyle,
+          fatigueAlert: isFatigued,
+          contradictionCount: contradictions.length,
+          contradictionMsg: contradictions.join(", ") || null
+        });
 
         // Stream response
         let fullResponse = "";
         socket.emit("typing", true);
 
         try {
-          fullResponse = await this.llm.chatStream(history, message, (chunk) => {
-            socket.emit("stream", { content: chunk });
-          });
+          if (image && mimeType) {
+            const description = await this.llm.analyzeImage(image, mimeType);
+            finalMessage = `[User attached an image. Optic Nerve description: ${description}]\n\nUser message: ${finalMessage}`;
+          }
 
-          addMessage("web", sessionId, "user", message);
+          fullResponse = await this.llm.chatStream(history, finalMessage, (chunk) => {
+            socket.emit("stream", { content: chunk });
+          }, options || {});
+
+          addMessage("web", sessionId, "user", finalMessage);
           addMessage("web", sessionId, "assistant", fullResponse);
 
           socket.emit("stream_end", {
@@ -100,7 +437,7 @@ export class WebBridge {
           });
 
           // Generate voice for the response
-          const audioPath = await generateTTS(fullResponse);
+          const audioPath = await generateTTS(fullResponse, voiceId);
           if (audioPath) {
             const fileName = path.basename(audioPath);
             socket.emit("voice", { url: `/temp/${fileName}` });
@@ -127,6 +464,22 @@ export class WebBridge {
         });
       });
 
+      // Handle setting mood
+      socket.on("set_mood", (data) => {
+        if (data && data.mood) {
+          this.llm.mood = data.mood;
+          console.log(`🎭 Web client changed Alya's mood to: ${data.mood}`);
+        }
+      });
+
+      // Handle custom lore save
+      socket.on("save_lore", (data) => {
+        if (data && typeof data.lore === "string") {
+          this.llm.customLore = data.lore;
+          console.log(`📜 Web client updated Alya's custom system lore.`);
+        }
+      });
+
       // Handle disconnect
       socket.on("disconnect", () => {
         console.log(`🌐 Web client disconnected: ${socket.id}`);
@@ -135,7 +488,7 @@ export class WebBridge {
 
     return new Promise((resolve) => {
       const startServer = (currentPort) => {
-        this.server.listen(currentPort, () => {
+        this.server.listen(currentPort, "0.0.0.0", () => {
           this.isReady = true;
           this.config.port = currentPort; // Update config if port changed
           console.log(`\n✨ Web Dashboard: http://localhost:${currentPort}`);
