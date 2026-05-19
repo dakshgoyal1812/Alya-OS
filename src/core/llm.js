@@ -9,7 +9,7 @@ import { availableTools, executeTool } from "./tools.js";
 import OpenAI from "openai";
 
 // Import Advanced AI features
-import { ModelRouter } from "./router.js";
+import { ModelRouter, MODEL_DIRECTORY } from "./router.js";
 import { ThinkingEngine } from "./reflection.js";
 import { AgentSwarm } from "./swarm.js";
 import { AdvancedMemoryEngine } from "./advanced_memory.js";
@@ -350,7 +350,7 @@ export class LLMEngine {
 
     // Router selection
     const activeModelKey = this.router.route(userMessage, options.routingMode || "intelligence");
-    const activeModel = this.router.MODEL_DIRECTORY[activeModelKey]?.name || this.model;
+    const activeModel = MODEL_DIRECTORY[activeModelKey]?.name || this.model;
 
     const sanitizedHistory = conversationHistory.map(msg => ({
       role: msg.role,
