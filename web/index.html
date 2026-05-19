@@ -672,126 +672,303 @@
 
         <!-- PANE 6: Inhuman Cognition Engine -->
         <div id="inhuman-pane" class="tab-pane">
-          <div class="creator-panel-container">
-            <!-- Left Column: Oracle, Lenses & Consequence cascades -->
-            <div class="creator-left-column">
-              <!-- Blind Spot Oracle Card -->
-              <div class="creator-card">
-                <h4>🎯 The Blind Spot Oracle</h4>
-                <p style="font-size: 11px; color: var(--text-400); margin-bottom: 10px;">
-                  Compiles subconscious patterns, fears, contradictions, and planning distortions into a brutally honest diagnostic.
-                </p>
-                <button class="btn-primary" id="btn-generate-oracle" style="width: 100%;">Synthesize Inhuman Diagnostic Report</button>
-                <div id="oracle-output" class="console-box" style="margin-top: 10px; display: none; line-height: 1.4;"></div>
-              </div>
+          <!-- Layer Navigation Links -->
+          <div style="display: flex; gap: 6px; margin-bottom: 15px; flex-wrap: wrap; background: rgba(0,0,0,0.15); padding: 8px; border-radius: 8px; border: 1px solid var(--border-subtle);">
+            <button class="btn-secondary active sub-layer-btn" data-layer="layer1-section" style="font-size: 11px; padding: 6px 12px; flex: 1; min-width: 140px;">🌑 L1: Perception</button>
+            <button class="btn-secondary sub-layer-btn" data-layer="layer2-section" style="font-size: 11px; padding: 6px 12px; flex: 1; min-width: 140px;">🌒 L2: Memory</button>
+            <button class="btn-secondary sub-layer-btn" data-layer="layer3-section" style="font-size: 11px; padding: 6px 12px; flex: 1; min-width: 140px;">🌓 L3: Intelligence</button>
+            <button class="btn-secondary sub-layer-btn" data-layer="layer4-section" style="font-size: 11px; padding: 6px 12px; flex: 1; min-width: 140px;">🌔 L4: Time</button>
+            <button class="btn-secondary sub-layer-btn" data-layer="layer5-section" style="font-size: 11px; padding: 6px 12px; flex: 1; min-width: 140px;">🌕 L5: Beyond Human</button>
+            <button class="btn-secondary sub-layer-btn" data-layer="layer6-section" style="font-size: 11px; padding: 6px 12px; flex: 1; min-width: 140px;">💀 L6: Truly Inhuman</button>
+          </div>
 
-              <!-- Quantum Perspective Wheel Card -->
-              <div class="creator-card" style="margin-top: 15px;">
-                <h4>⚛️ Quantum Perspective Engine</h4>
-                <div class="form-group">
-                  <label>Topic to view from 6 simultaneous angles:</label>
-                  <input type="text" id="perspective-topic" placeholder="e.g. Quitting my job to launch an AI application" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+          <!-- SECTION 1: Beyond Perception -->
+          <div id="layer1-section" class="sub-layer-pane">
+            <div class="creator-panel-container">
+              <div class="creator-left-column">
+                <div class="creator-card">
+                  <h4>💬 The Unsaid Words Engine</h4>
+                  <p style="font-size: 11px; color: var(--text-400); margin-bottom: 10px;">
+                    Tracks messages you started writing but deleted. Detects vulnerability avoidance trends.
+                  </p>
+                  <button class="btn-primary" id="btn-analyze-unsaid" style="width: 100%;">Audit Unsaid Messages Log</button>
+                  <div id="unsaid-output" class="console-box" style="margin-top: 10px; display: none;"></div>
                 </div>
-                <button class="btn-primary" id="btn-run-perspectives" style="width: 100%; margin-top: 8px;">Deconstruct Perspectives</button>
-                
-                <div id="perspective-wheel-container" style="display: none; margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
-                  <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 6px;">
-                    <span style="color: #eab308; font-weight: bold; font-size: 11px;">🧘 Monk Lens:</span>
-                    <p id="lens-monk" style="font-size: 11px; margin: 4px 0 0 0; color: var(--text-200);"></p>
-                  </div>
-                  <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 6px;">
-                    <span style="color: #06b6d4; font-weight: bold; font-size: 11px;">💰 Billionaire Lens:</span>
-                    <p id="lens-billionaire" style="font-size: 11px; margin: 4px 0 0 0; color: var(--text-200);"></p>
-                  </div>
-                  <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 6px;">
-                    <span style="color: #a855f7; font-weight: bold; font-size: 11px;">👶 Child Lens:</span>
-                    <p id="lens-child" style="font-size: 11px; margin: 4px 0 0 0; color: var(--text-200);"></p>
-                  </div>
-                  <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 6px;">
-                    <span style="color: #ef4444; font-weight: bold; font-size: 11px;">🥊 Enemy Lens:</span>
-                    <p id="lens-enemy" style="font-size: 11px; margin: 4px 0 0 0; color: var(--text-200);"></p>
-                  </div>
-                  <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 6px;">
-                    <span style="color: #10b981; font-weight: bold; font-size: 11px;">👴 Future Self Lens:</span>
-                    <p id="lens-future" style="font-size: 11px; margin: 4px 0 0 0; color: var(--text-200);"></p>
-                  </div>
-                  <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 8px; border-radius: 6px;">
-                    <span style="color: #ec4899; font-weight: bold; font-size: 11px;">💬 Socratic Lens:</span>
-                    <p id="lens-socratic" style="font-size: 11px; margin: 4px 0 0 0; color: var(--text-200);"></p>
-                  </div>
+
+                <div class="creator-card" style="margin-top: 15px;">
+                  <h4>🧬 Parallel Self Simulator</h4>
+                  <p style="font-size: 11px; color: var(--text-400); margin-bottom: 10px;">
+                    Runs a simulated conversation between your 16-year-old self and you now to audit core alignment drift.
+                  </p>
+                  <button class="btn-secondary" id="btn-run-parallel-self" style="width: 100%;">Initiate Drifting Simulator</button>
+                  <div id="parallel-self-output" class="console-box" style="margin-top: 10px; display: none;"></div>
                 </div>
               </div>
 
-              <!-- Second Order Consequence Card -->
-              <div class="creator-card" style="margin-top: 15px;">
-                <h4>🕸️ Second Order Consequence Engine</h4>
-                <div class="form-group">
-                  <label>Enter critical choice path:</label>
-                  <input type="text" id="consequence-decision" placeholder="e.g. Taking outside venture capital funding" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+              <div class="creator-right-column">
+                <div class="creator-card">
+                  <h4>🔍 Reality Distortion Detector</h4>
+                  <div class="form-group">
+                    <label>Enter statements or arguments to calculate accuracy probability:</label>
+                    <input type="text" id="reality-statements" placeholder="e.g. Everyone was wrong, only I did the work right" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                  </div>
+                  <button class="btn-primary" id="btn-detect-reality" style="width: 100%; margin-top: 8px;">Run Distortion Audit</button>
+                  <div id="reality-output-box" class="console-box" style="margin-top: 10px; display: none;"></div>
                 </div>
-                <button class="btn-primary" id="btn-run-consequences" style="width: 100%; margin-top: 8px;">Map 5-Layer Consequence Cascade</button>
-                <div id="consequences-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+
+                <div class="creator-card" style="margin-top: 15px;">
+                  <h4>🧊 The Iceberg Analyzer</h4>
+                  <div class="form-group">
+                    <label>State the surface problem you are facing:</label>
+                    <input type="text" id="iceberg-problem" placeholder="e.g. I don't have enough time to finish this dashboard" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                  </div>
+                  <button class="btn-primary" id="btn-run-iceberg" style="width: 100%; margin-top: 8px;">Drill Down 7 Layers Deep</button>
+                  <div id="iceberg-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+                </div>
               </div>
             </div>
+          </div>
 
-            <!-- Right Column: Future timelines, Mortality, Contradictions, Undercurrents -->
-            <div class="creator-right-column">
-              <!-- Probabilistic Future Timelines -->
-              <div class="creator-card">
-                <h4>🔮 Probabilistic Future Mapper</h4>
-                <div class="form-group">
-                  <label>Enter decision path for Monte Carlo timeline projection:</label>
-                  <input type="text" id="mapper-decision" placeholder="e.g. Moving to San Francisco" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+          <!-- SECTION 2: Beyond Memory -->
+          <div id="layer2-section" class="sub-layer-pane" style="display: none;">
+            <div class="creator-panel-container">
+              <div class="creator-left-column">
+                <div class="creator-card">
+                  <h4>👥 The Invisible Mentor Board</h4>
+                  <div class="form-group">
+                    <label>Pose a question to Elon, Marcus Aurelius, Steve Jobs & Naval:</label>
+                    <input type="text" id="mentor-question" placeholder="e.g. Should I build custom logic or use external libraries?" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                  </div>
+                  <button class="btn-primary" id="btn-consult-mentors" style="width: 100%; margin-top: 8px;">Deconstruct Advisory Board</button>
+                  <div id="mentors-output" class="console-box" style="margin-top: 10px; display: none;"></div>
                 </div>
-                <button class="btn-primary" id="btn-run-future-map" style="width: 100%; margin-top: 8px;">Run Timelines Simulation</button>
-                <div id="future-map-output" class="console-box" style="margin-top: 10px; display: none;"></div>
               </div>
 
-              <!-- Mortality Salience Engine Card -->
-              <div class="creator-card" style="margin-top: 15px;">
-                <h4>💀 Mortality Salience Calculator</h4>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; margin-bottom: 8px;">
-                  <div>Remaining Lifespan Days:</div>
-                  <div id="mortality-days" style="font-weight: bold; color: #ef4444; text-align: right;">--</div>
-                  <div>Percentage of Life Remaining:</div>
-                  <div id="mortality-percent" style="font-weight: bold; color: #ef4444; text-align: right;">--</div>
+              <div class="creator-right-column">
+                <div class="creator-card">
+                  <h4>🏰 Memory Palace Builder</h4>
+                  <div class="form-group">
+                    <label>Topic to memorize:</label>
+                    <input type="text" id="palace-topic" placeholder="e.g. Database Index Types" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200); margin-bottom: 8px;">
+                    <label>Key concepts (comma separated):</label>
+                    <input type="text" id="palace-concepts" placeholder="B-Tree, Hash, GiST, GIN" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                  </div>
+                  <button class="btn-primary" id="btn-build-palace" style="width: 100%; margin-top: 8px;">Construct Memory Palace</button>
+                  <div id="palace-output" class="console-box" style="margin-top: 10px; display: none;"></div>
                 </div>
-                <div class="form-group">
-                  <label>Verify cost of task (Estimated days execution time):</label>
-                  <input type="number" id="mortality-task-days" value="3" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+
+                <div class="creator-card" style="margin-top: 15px;">
+                  <h4>🍂 The Anti-Nostalgia Engine</h4>
+                  <div class="form-group">
+                    <label>Enter memory / past era to audit reality check:</label>
+                    <input type="text" id="nostalgia-topic" placeholder="e.g. Working at my last company startup" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                  </div>
+                  <button class="btn-secondary" id="btn-run-nostalgia" style="width: 100%; margin-top: 8px;">Run Nostalgia Reality Check</button>
+                  <div id="nostalgia-output" class="console-box" style="margin-top: 10px; display: none;"></div>
                 </div>
-                <button class="btn-secondary" id="btn-calculate-mortality" style="width: 100%; margin-top: 8px; font-size: 11px;">Calculate Lifespan Cost</button>
-                <div id="mortality-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 3: Beyond Intelligence -->
+          <div id="layer3-section" class="sub-layer-pane" style="display: none;">
+            <div class="creator-panel-container">
+              <div class="creator-left-column">
+                <div class="creator-card">
+                  <h4>🌀 Chaos Theory Advisor</h4>
+                  <div class="form-group">
+                    <label>Describe your current strategic bottleneck:</label>
+                    <input type="text" id="chaos-situation" placeholder="e.g. Struggling to find early users for my application" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                  </div>
+                  <button class="btn-primary" id="btn-run-chaos" style="width: 100%; margin-top: 8px;">Extract 1% Leverage Lever</button>
+                  <div id="chaos-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+                </div>
+
+                <div class="creator-card" style="margin-top: 15px;">
+                  <h4>🔄 Charlie Munger Inversion Engine</h4>
+                  <div class="form-group">
+                    <label>Goal to reverse engineer failure for:</label>
+                    <input type="text" id="inversion-goal" placeholder="e.g. Launching a successful API platform" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                  </div>
+                  <button class="btn-primary" id="btn-run-inversion" style="width: 100%; margin-top: 8px;">Generate Inversion Playbook</button>
+                  <div id="inversion-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+                </div>
               </div>
 
-              <!-- Contradiction & Assumption Dissector -->
-              <div class="creator-card" style="margin-top: 15px;">
-                <h4>🧬 Contradiction Genome & Assumptions</h4>
-                <div class="form-group">
-                  <label>Audit statement for logical inconsistencies & hidden fears:</label>
-                  <input type="text" id="dissection-statement" placeholder="e.g. I want to build a startup but I'm busy with school" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+              <div class="creator-right-column">
+                <div class="creator-card">
+                  <h4>💡 Overton Window Shifter</h4>
+                  <div class="form-group">
+                    <label>Enter a current baseline assumption:</label>
+                    <input type="text" id="overton-belief" placeholder="e.g. I must work 10 hours a day to make progress" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                  </div>
+                  <button class="btn-primary" id="btn-run-overton" style="width: 100%; margin-top: 8px;">Shift Acceptable Window</button>
+                  <div id="overton-output" class="console-box" style="margin-top: 10px; display: none;"></div>
                 </div>
-                <button class="btn-primary" id="btn-run-dissections" style="width: 100%; margin-top: 8px;">Audit Logic & Assumptions</button>
-                <div id="dissections-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+
+                <div class="creator-card" style="margin-top: 15px;">
+                  <h4>📊 Signal vs Noise Classifier</h4>
+                  <div class="form-group">
+                    <label>Enter daily options/tasks (comma separated):</label>
+                    <input type="text" id="signalnoise-items" placeholder="Writing core code, Answering emails, Scrolling forums, Planning database" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                  </div>
+                  <button class="btn-secondary" id="btn-run-signalnoise" style="width: 100%; margin-top: 8px;">Filter Mental Clutter</button>
+                  <div id="signalnoise-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 4: Beyond Time -->
+          <div id="layer4-section" class="sub-layer-pane" style="display: none;">
+            <div class="creator-panel-container">
+              <div class="creator-left-column">
+                <div class="creator-card">
+                  <h4>⏳ The 10/10/10 Gut Check</h4>
+                  <div class="form-group">
+                    <label>State the decision you are stressed about:</label>
+                    <input type="text" id="check-decision" placeholder="e.g. Delaying my launch date by one week" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                  </div>
+                  <button class="btn-primary" id="btn-run-check10" style="width: 100%; margin-top: 8px;">Audit 10m/10m/10y Outlook</button>
+                  <div id="check10-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+                </div>
+
+                <div class="creator-card" style="margin-top: 15px;">
+                  <h4>📈 Life Accounting System Ledger</h4>
+                  <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                      <label>Life Area:</label>
+                      <input type="text" id="ledger-area" value="Coding Core" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 6px; border-radius: 4px; color: var(--text-200);">
+                    </div>
+                    <div>
+                      <label>Hours Spent:</label>
+                      <input type="number" id="ledger-hours" value="4" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 6px; border-radius: 4px; color: var(--text-200);">
+                    </div>
+                    <div>
+                      <label>Energy Cost %:</label>
+                      <input type="number" id="ledger-energy" value="65" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 6px; border-radius: 4px; color: var(--text-200);">
+                    </div>
+                    <div>
+                      <label>ROI Value (1-100):</label>
+                      <input type="number" id="ledger-roi" value="85" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 6px; border-radius: 4px; color: var(--text-200);">
+                    </div>
+                  </div>
+                  <button class="btn-primary" id="btn-log-ledger" style="width: 100%; margin-top: 8px;">Record Asset Entry</button>
+                  <div id="ledger-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+                </div>
               </div>
 
-              <!-- Undercurrents & Subconscious Patterns -->
-              <div class="creator-card" style="margin-top: 15px;">
-                <h4>🌊 Emotional Undercurrents & Typing Profiler</h4>
-                <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
-                  <div style="display: flex; justify-content: space-between;">
-                    <span>Subconscious Deletions (Keystroke counts):</span>
-                    <span id="typing-deletions" style="color: var(--cyan-400); font-weight: bold;">0</span>
+              <div class="creator-right-column">
+                <div class="creator-card">
+                  <h4>⌛ The Deathbed Perspective Filter</h4>
+                  <div class="form-group">
+                    <label>Worry to filter through deathbed lens:</label>
+                    <input type="text" id="deathbed-worry" placeholder="e.g. My code has a minor database synchronization latency" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
                   </div>
-                  <div style="display: flex; justify-content: space-between;">
-                    <span>Avoided Topics Logged:</span>
-                    <span id="typing-avoided" style="color: var(--cyan-400);">None</span>
+                  <button class="btn-primary" id="btn-run-deathbed" style="width: 100%; margin-top: 8px;">Audit Worry Relevance</button>
+                  <div id="deathbed-output-box" class="console-box" style="margin-top: 10px; display: none;"></div>
+                </div>
+
+                <div class="creator-card" style="margin-top: 15px;">
+                  <h4>✨ Temporal Gratitude Reset</h4>
+                  <button class="btn-secondary" id="btn-run-gratitude" style="width: 100%;">Reset Baseline Happiness</button>
+                  <div id="gratitude-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 5: Beyond Human -->
+          <div id="layer5-section" class="sub-layer-pane" style="display: none;">
+            <div class="creator-panel-container">
+              <div class="creator-left-column">
+                <div class="creator-card">
+                  <h4>🏗️ The Pre-Mortem Machine</h4>
+                  <div class="form-group">
+                    <label>Enter planned project or relationship:</label>
+                    <input type="text" id="premortem-plan" placeholder="e.g. Shipping the Alya iOS application" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
                   </div>
-                  <div style="display: flex; justify-content: space-between; margin-top: 6px;">
-                    <span>Undercurrent Emotional Tone:</span>
-                    <span id="undercurrent-mood" style="color: #10b981; font-weight: bold;">Analyzing...</span>
+                  <button class="btn-primary" id="btn-run-premortem" style="width: 100%; margin-top: 8px;">Run Failure Simulation</button>
+                  <div id="premortem-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+                </div>
+
+                <div class="creator-card" style="margin-top: 15px;">
+                  <h4>🌋 Socratic Destructor</h4>
+                  <div class="form-group">
+                    <label>Enter your best/most precious idea to destroy:</label>
+                    <input type="text" id="destructor-idea" placeholder="e.g. Creating a local vector DB without external indexes" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
                   </div>
-                  <div id="undercurrent-markers" style="font-size: 11px; color: var(--text-400); margin-top: 4px; padding-left: 6px; border-left: 2px solid var(--border-subtle);"></div>
+                  <button class="btn-primary" id="btn-run-destructor" style="width: 100%; margin-top: 8px;">Deconstruct & Stress Test Idea</button>
+                  <div id="destructor-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+                </div>
+              </div>
+
+              <div class="creator-right-column">
+                <div class="creator-card">
+                  <h4>📉 Existential Risk Ranker</h4>
+                  <div class="form-group">
+                    <label>Enter worries to assess statistical risks (comma separated):</label>
+                    <input type="text" id="risk-worries" placeholder="API limit pricing, Burnout from coding, Minor layout bugs" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                  </div>
+                  <button class="btn-primary" id="btn-run-risks" style="width: 100%; margin-top: 8px;">Audit Risk Allocation</button>
+                  <div id="risks-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+                </div>
+
+                <div class="creator-card" style="margin-top: 15px;">
+                  <h4>🏷️ Identity Stress Test</h4>
+                  <button class="btn-secondary" id="btn-run-identity" style="width: 100%;">Strip Identity Labels</button>
+                  <div id="identity-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 6: Truly Inhuman -->
+          <div id="layer6-section" class="sub-layer-pane" style="display: none;">
+            <div class="creator-panel-container">
+              <div class="creator-left-column">
+                <div class="creator-card">
+                  <h4>💀 Ego Dissolution Mode</h4>
+                  <div class="form-group">
+                    <label>Describe a difficult situation you are blaming on others:</label>
+                    <input type="text" id="dissolve-situation" placeholder="e.g. The remote repo didn't build because the API was slow" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                  </div>
+                  <button class="btn-primary" id="btn-run-dissolve" style="width: 100%; margin-top: 8px;">Expose Raw Unjustified Reality</button>
+                  <div id="dissolve-output" class="console-box" style="margin-top: 10px; display: none; border-left: 2px solid #ef4444; color: #ef4444;"></div>
+                </div>
+
+                <div class="creator-card" style="margin-top: 15px;">
+                  <h4>📈 Prediction Market of You</h4>
+                  <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div>
+                      <label>Behavior / Goal:</label>
+                      <input type="text" id="predict-text" value="Will sleep before 11 PM tonight" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 6px; border-radius: 4px; color: var(--text-200);">
+                    </div>
+                    <div>
+                      <label>Confidence %:</label>
+                      <input type="number" id="predict-prob" value="45" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 6px; border-radius: 4px; color: var(--text-200);">
+                    </div>
+                  </div>
+                  <button class="btn-primary" id="btn-log-predict" style="width: 100%; margin-top: 8px;">Place Prediction Bet</button>
+                  <div id="predict-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+                </div>
+              </div>
+
+              <div class="creator-right-column">
+                <div class="creator-card">
+                  <h4>⚡ The Final Answer Engine</h4>
+                  <div class="form-group">
+                    <label>Enter option options list (comma separated):</label>
+                    <input type="text" id="final-options" placeholder="Refactor db models now, Clean HTML styling, Check news feeds" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                  </div>
+                  <button class="btn-primary" id="btn-run-final" style="width: 100%; margin-top: 8px;">Decide Stated with Conviction</button>
+                  <div id="final-output" class="console-box" style="margin-top: 10px; display: none; font-weight: bold; border-left: 2px solid var(--cyan-400);"></div>
+                </div>
+
+                <div class="creator-card" style="margin-top: 15px;">
+                  <h4>👁️ Collective Unconscious Feed</h4>
+                  <button class="btn-secondary" id="btn-run-collective" style="width: 100%;">Pool Anonymous User Cycles</button>
+                  <div id="collective-output" class="console-box" style="margin-top: 10px; display: none;"></div>
                 </div>
               </div>
             </div>

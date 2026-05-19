@@ -2046,216 +2046,533 @@
   }
   loadExperimentalStats();
 
-  // 12. Inhuman Cognition Engine UI Bindings
-  const btnGenerateOracle = document.getElementById("btn-generate-oracle");
-  const btnRunPerspectives = document.getElementById("btn-run-perspectives");
-  const btnRunConsequences = document.getElementById("btn-run-consequences");
-  const btnRunFutureMap = document.getElementById("btn-run-future-map");
-  const btnCalculateMortality = document.getElementById("btn-calculate-mortality");
-  const btnRunDissections = document.getElementById("btn-run-dissections");
-
-  btnGenerateOracle?.addEventListener("click", async () => {
-    const out = document.getElementById("oracle-output");
-    out.style.display = "block";
-    out.textContent = "🎯 Activating Blind Spot Oracle... parsing subconscious vectors...";
-
-    try {
-      const res = await fetch("/api/cognitive/oracle");
-      const data = await res.json();
-      if (data.success && data.report) {
-        const r = data.report;
-        out.innerHTML = `
-          <strong>Date Generated:</strong> ${new Date(r.generatedAt).toLocaleDateString()}<br>
-          <strong>Age Profile:</strong> ${r.ageProfile}<br>
-          <strong>Planning Distortion Bias:</strong> ${r.timeDistortionFactor}<br>
-          <strong>Subconscious Registry:</strong> ${r.subconsciousKeystrokeRegistry}<br>
-          <strong>Avoided Core Fears:</strong> ${r.avoidedFears.join(", ")}<br><br>
-          <strong>🧬 Diagnostic Summary:</strong><br>${r.profileSummary}<br><br>
-          <strong>🛡️ Key Prescription:</strong><br><em>${r.keyPrescription}</em>
-        `;
-      }
-    } catch (e) {
-      out.textContent = "Error generating blind spot report.";
-    }
-  });
-
-  btnRunPerspectives?.addEventListener("click", async () => {
-    const topic = document.getElementById("perspective-topic").value.trim();
-    if (!topic) return alert("Enter a topic first!");
-
-    const container = document.getElementById("perspective-wheel-container");
-    container.style.display = "flex";
-    
-    // Set loading
-    document.getElementById("lens-monk").textContent = "Loading...";
-    document.getElementById("lens-billionaire").textContent = "Loading...";
-    document.getElementById("lens-child").textContent = "Loading...";
-    document.getElementById("lens-enemy").textContent = "Loading...";
-    document.getElementById("lens-future").textContent = "Loading...";
-    document.getElementById("lens-socratic").textContent = "Loading...";
-
-    try {
-      const res = await fetch("/api/cognitive/perspectives", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic })
+  // Layer Navigation switcher
+  document.querySelectorAll(".sub-layer-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".sub-layer-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      
+      const targetId = btn.getAttribute("data-layer");
+      document.querySelectorAll(".sub-layer-pane").forEach(pane => {
+        pane.style.display = pane.id === targetId ? "block" : "none";
       });
-      const data = await res.json();
-      if (data.success && data.perspectives) {
-        const p = data.perspectives;
-        document.getElementById("lens-monk").textContent = p.monk;
-        document.getElementById("lens-billionaire").textContent = p.billionaire;
-        document.getElementById("lens-child").textContent = p.child;
-        document.getElementById("lens-enemy").textContent = p.enemy;
-        document.getElementById("lens-future").textContent = p.futureSelf;
-        document.getElementById("lens-socratic").textContent = p.socratic;
-      }
-    } catch (e) {
-      container.style.display = "none";
-      alert("Error generating perspectives.");
-    }
+    });
   });
 
-  btnRunConsequences?.addEventListener("click", async () => {
-    const decision = document.getElementById("consequence-decision").value.trim();
-    if (!decision) return alert("State a decision first!");
-
-    const out = document.getElementById("consequences-output");
+  // Layer 1 Event Listeners
+  document.getElementById("btn-analyze-unsaid")?.addEventListener("click", async () => {
+    const out = document.getElementById("unsaid-output");
     out.style.display = "block";
-    out.textContent = "Mapping consequence tiers...";
-
+    out.textContent = "Scanning keystroke registers and deleted draft indices...";
     try {
-      const res = await fetch("/api/cognitive/consequences", {
+      const res = await fetch("/api/cognitive/layer1/unsaid/analysis");
+      const data = await res.json();
+      if (data.success && data.analysis) {
+        const a = data.analysis;
+        out.innerHTML = `<strong>Total Deleted Drafts:</strong> ${a.totalDeletedDrafts}<br><strong>Diagnosis:</strong> ${a.diagnosis}`;
+      }
+    } catch(e) { out.textContent = "Error scanning drafts."; }
+  });
+
+  document.getElementById("btn-run-parallel-self")?.addEventListener("click", async () => {
+    const out = document.getElementById("parallel-self-output");
+    out.style.display = "block";
+    out.textContent = "Rebuilding simulated schema of self at age 16 vs now...";
+    try {
+      const res = await fetch("/api/cognitive/layer1/parallel");
+      const data = await res.json();
+      if (data.success && data.conversation) {
+        out.innerHTML = data.conversation.map(c => `<strong>${c.speaker}:</strong> ${c.text}`).join("<br><br>");
+      }
+    } catch(e) { out.textContent = "Error running simulator."; }
+  });
+
+  document.getElementById("btn-detect-reality")?.addEventListener("click", async () => {
+    const val = document.getElementById("reality-statements").value.trim();
+    const statements = val ? val.split(",").map(s => s.trim()) : [];
+    const out = document.getElementById("reality-output-box");
+    out.style.display = "block";
+    out.textContent = "Calculating probability indices against objective reality profiles...";
+    try {
+      const res = await fetch("/api/cognitive/layer1/reality", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision })
+        body: JSON.stringify({ statements })
       });
       const data = await res.json();
       if (data.success && data.result) {
-        const r = data.result;
-        out.innerHTML = r.levels.map(l => {
-          return `<strong>Level ${l.level}: ${l.name}</strong><br>${l.description}<br><br>`;
-        }).join("");
+        out.innerHTML = `<strong>Accuracy Score:</strong> ${data.result.accuracyProbability}%<br><strong>Verdict:</strong> ${data.result.verdict}`;
       }
-    } catch (e) {
-      out.textContent = "Error mapping consequences.";
-    }
+    } catch(e) { out.textContent = "Error verifying statements."; }
   });
 
-  btnRunFutureMap?.addEventListener("click", async () => {
-    const decision = document.getElementById("mapper-decision").value.trim();
-    if (!decision) return alert("Enter decision first!");
-
-    const out = document.getElementById("future-map-output");
+  document.getElementById("btn-run-iceberg")?.addEventListener("click", async () => {
+    const problem = document.getElementById("iceberg-problem").value.trim();
+    if (!problem) return alert("Describe your surface problem first.");
+    const out = document.getElementById("iceberg-output");
     out.style.display = "block";
-    out.textContent = "Running Monte Carlo timeline cascades...";
-
+    out.textContent = "Drilling down 7 layers of subtext...";
     try {
-      const res = await fetch("/api/cognitive/future", {
+      const res = await fetch("/api/cognitive/layer1/iceberg", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ problem })
+      });
+      const data = await res.json();
+      if (data.success && data.iceberg) {
+        out.innerHTML = data.iceberg.map(l => `<strong>Layer ${l.layer} [${l.label}]:</strong> ${l.description}`).join("<br><br>");
+      }
+    } catch(e) { out.textContent = "Error analyzing iceberg layers."; }
+  });
+
+  // Layer 2 Event Listeners
+  document.getElementById("btn-consult-mentors")?.addEventListener("click", async () => {
+    const question = document.getElementById("mentor-question").value.trim();
+    if (!question) return alert("Pose a question to the board first.");
+    const out = document.getElementById("mentors-output");
+    out.style.display = "block";
+    out.textContent = "Summoning board members into virtual thread...";
+    try {
+      const res = await fetch("/api/cognitive/layer2/mentors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question })
+      });
+      const data = await res.json();
+      if (data.success && data.feedback) {
+        const fb = data.feedback;
+        out.innerHTML = `
+          <strong>🚀 Elon Musk:</strong> ${fb.elonMusk}<br><br>
+          <strong>🧘 Marcus Aurelius:</strong> ${fb.marcusAurelius}<br><br>
+          <strong>⚓ Naval Ravikant:</strong> ${fb.navalRavikant}<br><br>
+          <strong>🍎 Steve Jobs:</strong> ${fb.steveJobs}<br><br>
+          <strong>⚛️ Richard Feynman:</strong> ${fb.richardFeynman}
+        `;
+      }
+    } catch(e) { out.textContent = "Error consulting mentor board."; }
+  });
+
+  document.getElementById("btn-build-palace")?.addEventListener("click", async () => {
+    const topic = document.getElementById("palace-topic").value.trim();
+    const val = document.getElementById("palace-concepts").value.trim();
+    const concepts = val ? val.split(",").map(c => c.trim()) : [];
+    if (!topic || !concepts.length) return alert("Specify topic and concepts.");
+    const out = document.getElementById("palace-output");
+    out.style.display = "block";
+    out.textContent = "Laying down spatial anchors in the Roman Villa blueprint...";
+    try {
+      const res = await fetch("/api/cognitive/layer2/palace", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic, concepts })
+      });
+      const data = await res.json();
+      if (data.success && data.palace) {
+        const p = data.palace;
+        let html = `<strong>Palace Location:</strong> ${p.palaceLocation}<br><br>`;
+        html += p.rooms.map(r => `<strong>${r.room}:</strong> ${r.anchorObject}<br><em>${r.recallPrompt}</em>`).join("<br><br>");
+        out.innerHTML = html;
+      }
+    } catch(e) { out.textContent = "Error building memory palace."; }
+  });
+
+  document.getElementById("btn-run-nostalgia")?.addEventListener("click", async () => {
+    const pastTopic = document.getElementById("nostalgia-topic").value.trim();
+    if (!pastTopic) return alert("Specify a memory era first.");
+    const out = document.getElementById("nostalgia-output");
+    out.style.display = "block";
+    out.textContent = "Contrasting romanticized recall with historical statement index...";
+    try {
+      const res = await fetch("/api/cognitive/layer2/nostalgia", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pastTopic })
+      });
+      const data = await res.json();
+      if (data.success && data.report) {
+        const r = data.report;
+        out.innerHTML = `<strong>Nostalgic Narrative:</strong> ${r.romanticizedMemory}<br><br><strong>Actual Metrics:</strong> ${r.actualGenomeMetrics}<br><br><strong>Verdict:</strong> <em style="color:#ef4444">${r.verdict}</em>`;
+      }
+    } catch(e) { out.textContent = "Error checking nostalgia filters."; }
+  });
+
+  // Layer 3 Event Listeners
+  document.getElementById("btn-run-chaos")?.addEventListener("click", async () => {
+    const situation = document.getElementById("chaos-situation").value.trim();
+    if (!situation) return alert("Describe your bottleneck first.");
+    const out = document.getElementById("chaos-output");
+    out.style.display = "block";
+    out.textContent = "Computing chaos multiplier cascades...";
+    try {
+      const res = await fetch("/api/cognitive/layer3/chaos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ situation })
+      });
+      const data = await res.json();
+      if (data.success && data.lever) {
+        out.innerHTML = `<strong>1% Action Lever:</strong> ${data.lever.leverAction}<br><strong>Impact ROI:</strong> ${data.lever.leverageMultiplier}<br><strong>Expected Cascade:</strong> ${data.lever.expectedCascade}`;
+      }
+    } catch(e) { out.textContent = "Error calculating chaos leverage."; }
+  });
+
+  document.getElementById("btn-run-inversion")?.addEventListener("click", async () => {
+    const goal = document.getElementById("inversion-goal").value.trim();
+    if (!goal) return alert("Enter your target goal first.");
+    const out = document.getElementById("inversion-output");
+    out.style.display = "block";
+    out.textContent = "Applying Charlie Munger inversion algorithm...";
+    try {
+      const res = await fetch("/api/cognitive/layer3/inversion", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goal })
+      });
+      const data = await res.json();
+      if (data.success && data.plan) {
+        const p = data.plan;
+        let html = `<strong>How to Guarantee Absolute Failure:</strong><br>`;
+        html += p.failureGuarantees.map(g => `• ${g}`).join("<br>") + `<br><br>`;
+        html += `<strong>Inverted Action Plan (To Succeed):</strong><br>`;
+        html += p.invertedActionPlan.map(a => `• ${a}`).join("<br>");
+        out.innerHTML = html;
+      }
+    } catch(e) { out.textContent = "Error running inversion engine."; }
+  });
+
+  document.getElementById("btn-run-overton")?.addEventListener("click", async () => {
+    const belief = document.getElementById("overton-belief").value.trim();
+    if (!belief) return alert("State a current belief first.");
+    const out = document.getElementById("overton-output");
+    out.style.display = "block";
+    out.textContent = "Locating belief boundaries and shifting windows...";
+    try {
+      const res = await fetch("/api/cognitive/layer3/overton", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ belief })
+      });
+      const data = await res.json();
+      if (data.success && data.shift) {
+        out.innerHTML = `<strong>Current Window:</strong> ${data.shift.acceptableBelief}<br><br><strong>Boundary Concept:</strong> ${data.shift.boundaryIdea}<br><br><strong>Weekly Overton Discomfort Action:</strong> <em style="color:#a855f7;">${data.shift.uncomfortableActionStep}</em>`;
+      }
+    } catch(e) { out.textContent = "Error shifting Overton window."; }
+  });
+
+  document.getElementById("btn-run-signalnoise")?.addEventListener("click", async () => {
+    const val = document.getElementById("signalnoise-items").value.trim();
+    const items = val ? val.split(",").map(i => i.trim()) : [];
+    const out = document.getElementById("signalnoise-output");
+    out.style.display = "block";
+    out.textContent = "Filtering noise vectors from focus channels...";
+    try {
+      const res = await fetch("/api/cognitive/layer3/signalnoise", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items })
+      });
+      const data = await res.json();
+      if (data.success && data.classification) {
+        out.innerHTML = data.classification.map(c => `<strong>${c.item}:</strong> ${c.classification}`).join("<br>");
+      }
+    } catch(e) { out.textContent = "Error filtering noise."; }
+  });
+
+  // Layer 4 Event Listeners
+  document.getElementById("btn-run-check10")?.addEventListener("click", async () => {
+    const decision = document.getElementById("check-decision").value.trim();
+    if (!decision) return alert("State a decision first.");
+    const out = document.getElementById("check10-output");
+    out.style.display = "block";
+    out.textContent = "Scaling decision through 10m/10m/10y timelines...";
+    try {
+      const res = await fetch("/api/cognitive/layer4/check10", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ decision })
       });
       const data = await res.json();
-      if (data.success && data.timeline) {
-        out.innerHTML = data.timeline.map(t => {
-          return `
-            <div style="margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;">
-              <span style="color: var(--cyan-400); font-weight: bold;">${t.scenario} (${t.likelihood}%)</span><br>
-              <span>Outcome: ${t.consequences}</span><br>
-              <small style="color: #f59e0b;">Primary Risk: ${t.riskFactor}</small>
-            </div>
-          `;
-        }).join("");
-      }
-    } catch (e) {
-      out.textContent = "Error running timeline mapper.";
-    }
-  });
-
-  btnCalculateMortality?.addEventListener("click", async () => {
-    const taskDays = document.getElementById("mortality-task-days").value || 1;
-    const out = document.getElementById("mortality-output");
-    out.style.display = "block";
-    out.textContent = "Calculating days...";
-
-    try {
-      const res = await fetch("/api/cognitive/mortality", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskDays })
-      });
-      const data = await res.json();
-      if (data.success && data.metrics) {
-        const m = data.metrics;
-        document.getElementById("mortality-days").textContent = `${m.daysRemaining.toLocaleString()} Days`;
-        document.getElementById("mortality-percent").textContent = `${m.percentRemaining}%`;
-        
+      if (data.success && data.check) {
+        const c = data.check;
         out.innerHTML = `
-          <strong>Mortality Framing Audit:</strong><br>
-          • You are currently ${m.age} years old.<br>
-          • You have lived approximately ${m.daysLived.toLocaleString()} days.<br>
-          • This task demands ${m.taskCostDays} days, which represents <strong>${m.taskCostPercent}%</strong> of your remaining lifetime.<br><br>
-          <em>Verdict: Decide if this task is worth sacrificing that proportion of your finite existence.</em>
+          <strong>In 10 Minutes:</strong> ${c.in10Minutes}<br><br>
+          <strong>In 10 Months:</strong> ${c.in10Months}<br><br>
+          <strong>In 10 Years:</strong> ${c.in10Years}
         `;
       }
-    } catch (e) {
-      out.textContent = "Error calculating mortality metrics.";
-    }
+    } catch(e) { out.textContent = "Error running gut check."; }
   });
 
-  btnRunDissections?.addEventListener("click", async () => {
-    const statement = document.getElementById("dissection-statement").value.trim();
-    if (!statement) return alert("Write a statement first!");
-
-    const out = document.getElementById("dissections-output");
+  document.getElementById("btn-log-ledger")?.addEventListener("click", async () => {
+    const area = document.getElementById("ledger-area").value.trim();
+    const hours = parseFloat(document.getElementById("ledger-hours").value) || 0;
+    const energy = parseFloat(document.getElementById("ledger-energy").value) || 0;
+    const ROI = parseFloat(document.getElementById("ledger-roi").value) || 0;
+    const out = document.getElementById("ledger-output");
     out.style.display = "block";
-    out.textContent = "Deconstructing statement premises...";
-
+    out.textContent = "Recording ledger allocation...";
     try {
-      // Get assumptions
-      const resA = await fetch("/api/cognitive/assumptions", {
+      const res = await fetch("/api/cognitive/layer4/ledger", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ statement })
+        body: JSON.stringify({ area, hours, energy, ROI })
       });
-      const dataA = await resA.json();
-
-      // Get contradictions
-      const resC = await fetch("/api/cognitive/contradiction", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ statement })
-      });
-      const dataC = await resC.json();
-
-      let html = "<strong>Micro-Assumption Dissections:</strong><br>";
-      if (dataA.success && dataA.assumptions) {
-        html += dataA.assumptions.map(a => `• ${a}`).join("<br>") + "<br><br>";
+      const data = await res.json();
+      if (data.success && data.ledger) {
+        out.innerHTML = `<strong>Ledger Entry Recorded!</strong><br>Total historical logs: ${data.ledger.length} entries.`;
       }
-
-      html += "<strong>Contradiction Genome conflicts:</strong><br>";
-      if (dataC.success && dataC.conflicts) {
-        if (dataC.conflicts.length === 0) {
-          html += "No logical conflicts detected against historical genome log.";
-        } else {
-          html += dataC.conflicts.map(c => {
-            return `
-              <div style="color: #f59e0b; border-left: 2px solid #f59e0b; padding-left: 6px; margin: 4px 0;">
-                Conflict Match (${c.conflictScore}% confidence)<br>
-                A: ${c.nodeA}<br>
-                B: ${c.nodeB}<br>
-                <strong>Inconsistency:</strong> ${c.mismatchReason}
-              </div>
-            `;
-          }).join("");
-        }
-      }
-      out.innerHTML = html;
-    } catch (e) {
-      out.textContent = "Error auditing statement.";
-    }
+    } catch(e) { out.textContent = "Error logging to ledger."; }
   });
+
+  document.getElementById("btn-run-deathbed")?.addEventListener("click", async () => {
+    const worry = document.getElementById("deathbed-worry").value.trim();
+    if (!worry) return alert("State a worry first.");
+    const out = document.getElementById("deathbed-output-box");
+    out.style.display = "block";
+    out.textContent = "Filtering stress indices through mortality end-state...";
+    try {
+      const res = await fetch("/api/cognitive/layer4/deathbed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ worry })
+      });
+      const data = await res.json();
+      if (data.success && data.filter) {
+        out.innerHTML = `<strong>Deathbed Significance Score:</strong> ${data.filter.deathbedSignificanceScore}/100<br><br><strong>Verdict:</strong> ${data.filter.verdict}`;
+      }
+    } catch(e) { out.textContent = "Error verifying significance."; }
+  });
+
+  document.getElementById("btn-run-gratitude")?.addEventListener("click", async () => {
+    const out = document.getElementById("gratitude-output");
+    out.style.display = "block";
+    out.textContent = "Recalling forgotten assets...";
+    try {
+      const res = await fetch("/api/cognitive/layer4/gratitude");
+      const data = await res.json();
+      if (data.success && data.gratitude) {
+        const g = data.gratitude;
+        out.innerHTML = `<strong>Current Asset:</strong> ${g.currentAsset}<br><strong>Forgotten Past Dream:</strong> ${g.pastDesire}<br><br><strong>Reset Verdict:</strong> <em>${g.baselineReset}</em>`;
+      }
+    } catch(e) { out.textContent = "Error checking gratitude baseline."; }
+  });
+
+  // Layer 5 Event Listeners
+  document.getElementById("btn-run-premortem")?.addEventListener("click", async () => {
+    const planName = document.getElementById("premortem-plan").value.trim();
+    if (!planName) return alert("Specify a plan first.");
+    const out = document.getElementById("premortem-output");
+    out.style.display = "block";
+    out.textContent = "Simulating absolute failure patterns...";
+    try {
+      const res = await fetch("/api/cognitive/layer5/premortem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planName })
+      });
+      const data = await res.json();
+      if (data.success && data.preMortem) {
+        const p = data.preMortem;
+        let html = `<strong>Plan Status:</strong> <span style="color:#ef4444;">${p.assumedStatus}</span><br><br>`;
+        html += `<strong>Why it failed (Post-Mortem Analysis):</strong><br>`;
+        html += p.postMortemReasons.map(r => `• ${r}`).join("<br>") + "<br><br>";
+        html += `<strong>Preventative Actions:</strong><br>`;
+        html += p.preventativeMitigations.map(m => `• ${m}`).join("<br>");
+        out.innerHTML = html;
+      }
+    } catch(e) { out.textContent = "Error running pre-mortem."; }
+  });
+
+  document.getElementById("btn-run-destructor")?.addEventListener("click", async () => {
+    const idea = document.getElementById("destructor-idea").value.trim();
+    if (!idea) return alert("Write an idea first.");
+    const out = document.getElementById("destructor-output");
+    out.style.display = "block";
+    out.textContent = "Initiating logical Socratic demolition sweep...";
+    try {
+      const res = await fetch("/api/cognitive/layer5/destructor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idea })
+      });
+      const data = await res.json();
+      if (data.success && data.destruction) {
+        const d = data.destruction;
+        let html = `<strong>Flaw Detections:</strong><br>`;
+        html += d.logicalFlaws.map(f => `• ${f}`).join("<br>") + "<br><br>";
+        html += `<strong>Surviving Truth:</strong> <span style="color:#10b981;">${d.survivingTruth}</span>`;
+        out.innerHTML = html;
+      }
+    } catch(e) { out.textContent = "Error testing idea."; }
+  });
+
+  document.getElementById("btn-run-risks")?.addEventListener("click", async () => {
+    const val = document.getElementById("risk-worries").value.trim();
+    const worries = val ? val.split(",").map(w => w.trim()) : [];
+    const out = document.getElementById("risks-output");
+    out.style.display = "block";
+    out.textContent = "Scaling worries against real-world existential threats...";
+    try {
+      const res = await fetch("/api/cognitive/layer5/risks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ worries })
+      });
+      const data = await res.json();
+      if (data.success && data.ranked) {
+        out.innerHTML = data.ranked.map(r => `<strong>${r.worry}:</strong> Risk ${r.actualStatisticalRisk} (${r.suggestedAttentionAllocation})`).join("<br>");
+      }
+    } catch(e) { out.textContent = "Error ranking risks."; }
+  });
+
+  document.getElementById("btn-run-identity")?.addEventListener("click", async () => {
+    const out = document.getElementById("identity-output");
+    out.style.display = "block";
+    out.textContent = "Stripping labels...";
+    try {
+      const res = await fetch("/api/cognitive/layer5/identity");
+      const data = await res.json();
+      if (data.success && data.test) {
+        out.innerHTML = data.test.steps.map(s => `• ${s}`).join("<br>");
+      }
+    } catch(e) { out.textContent = "Error running identity stress test."; }
+  });
+
+  // Layer 6 Event Listeners
+  document.getElementById("btn-run-dissolve")?.addEventListener("click", async () => {
+    const situation = document.getElementById("dissolve-situation").value.trim();
+    if (!situation) return alert("State a blaming scenario first.");
+    const out = document.getElementById("dissolve-output");
+    out.style.display = "block";
+    out.textContent = "Dissolving ego buffers...";
+    try {
+      const res = await fetch("/api/cognitive/layer6/dissolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ situation })
+      });
+      const data = await res.json();
+      if (data.success && data.rawRaw) {
+        out.innerHTML = `<strong>Ego Excuse:</strong> ${data.rawRaw.egoProtectiveNarrative}<br><br><strong>Raw Reality:</strong> ${data.rawRaw.dissolvedRawReality}`;
+      }
+    } catch(e) { out.textContent = "Error running ego dissolution."; }
+  });
+
+  document.getElementById("btn-log-predict")?.addEventListener("click", async () => {
+    const predictionText = document.getElementById("predict-text").value.trim();
+    const probability = parseFloat(document.getElementById("predict-prob").value) || 50;
+    const out = document.getElementById("predict-output");
+    out.style.display = "block";
+    out.textContent = "Logging prediction vector to the behavior ledger...";
+    try {
+      const res = await fetch("/api/cognitive/layer6/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ predictionText, probability })
+      });
+      const data = await res.json();
+      if (data.success) {
+        out.innerHTML = `<strong>Prediction Logged!</strong><br>Behavior registered for continuous audit tracking.`;
+      }
+    } catch(e) { out.textContent = "Error logging prediction."; }
+  });
+
+  document.getElementById("btn-run-final")?.addEventListener("click", async () => {
+    const val = document.getElementById("final-options").value.trim();
+    const options = val ? val.split(",").map(o => o.trim()) : [];
+    const out = document.getElementById("final-output");
+    out.style.display = "block";
+    out.textContent = "Selecting absolute conviction vector...";
+    try {
+      const res = await fetch("/api/cognitive/layer6/final", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ options })
+      });
+      const data = await res.json();
+      if (data.success && data.choice) {
+        out.innerHTML = `<strong>Conviction Choice:</strong> ${data.choice.finalConvictionChoice}<br><br><strong>Reasoning:</strong> ${data.choice.reasoning}`;
+      }
+    } catch(e) { out.textContent = "Error resolving final answer."; }
+  });
+
+  document.getElementById("btn-run-collective")?.addEventListener("click", async () => {
+    const out = document.getElementById("collective-output");
+    out.style.display = "block";
+    out.textContent = "Fetching global user pattern alignment...";
+    try {
+      const res = await fetch("/api/cognitive/layer6/feed");
+      const data = await res.json();
+      if (data.success && data.feed) {
+        const f = data.feed;
+        out.innerHTML = `<strong>Global Users Analyzed:</strong> ${f.globalUsersAnalyzed}<br><strong>Matching Pattern Nodes:</strong> ${f.matchingPatternCount}<br><br><strong>Historical Verdict:</strong> ${f.parallelLivesVerdict}`;
+      }
+    } catch(e) { out.textContent = "Error pooling collective unconscious."; }
+  });
+
+  // 13. Privacy Fortress State Persistence and Execution
+  const checkZeroKnowledge = document.getElementById("check-zero-knowledge");
+  const checkDecoyMode = document.getElementById("check-decoy-mode");
+  const checkGhostProtocol = document.getElementById("check-ghost-protocol");
+
+  if (checkZeroKnowledge) {
+    checkZeroKnowledge.checked = localStorage.getItem("zero_knowledge_mode") === "true";
+    checkZeroKnowledge.addEventListener("change", (e) => {
+      localStorage.setItem("zero_knowledge_mode", e.target.checked);
+      if (e.target.checked) {
+        showStatusNotification("🔒 Zero Knowledge: Local encryption active.");
+      }
+    });
+  }
+
+  if (checkDecoyMode) {
+    checkDecoyMode.checked = localStorage.getItem("decoy_mode") === "true";
+    
+    const applyDecoyUI = (active) => {
+      if (active) {
+        document.body.classList.add("decoy-active");
+        showStatusNotification("🛡️ Decoy Safe Mode active. Standard chat environment loaded.");
+        const alyaStatus = document.getElementById("routing-model");
+        if (alyaStatus) alyaStatus.textContent = "Alya Standard (Decoy)";
+      } else {
+        document.body.classList.remove("decoy-active");
+        const alyaStatus = document.getElementById("routing-model");
+        if (alyaStatus) alyaStatus.textContent = "Llama-3.3-70B";
+      }
+    };
+    
+    applyDecoyUI(checkDecoyMode.checked);
+
+    checkDecoyMode.addEventListener("change", (e) => {
+      localStorage.setItem("decoy_mode", e.target.checked);
+      applyDecoyUI(e.target.checked);
+    });
+  }
+
+  if (checkGhostProtocol) {
+    checkGhostProtocol.checked = localStorage.getItem("ghost_protocol") === "true";
+    checkGhostProtocol.addEventListener("change", (e) => {
+      localStorage.setItem("ghost_protocol", e.target.checked);
+      if (e.target.checked) {
+        showStatusNotification("👻 Ghost Protocol active. Session log local cache deactivated.");
+      }
+    });
+  }
+
+  function showStatusNotification(message) {
+    const firewallLogs = document.getElementById("firewall-logs");
+    if (firewallLogs) {
+      const logDiv = document.createElement("div");
+      logDiv.style.color = "var(--accent-400)";
+      logDiv.style.marginBottom = "4px";
+      logDiv.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      // Remove placeholder text if present
+      if (firewallLogs.textContent.includes("No intrusion threats logged")) {
+        firewallLogs.textContent = "";
+      }
+      firewallLogs.prepend(logDiv);
+    }
+  }
 
   // Initialize sync
   rehydrateStateFromLocal();

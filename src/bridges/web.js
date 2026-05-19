@@ -485,6 +485,196 @@ export class WebBridge {
       res.json({ success: true, report });
     });
 
+    // --- LAYER 1 — Beyond Perception ---
+    this.app.post("/api/cognitive/layer1/unsaid", (req, res) => {
+      const { text } = req.body;
+      const list = this.inhuman.logDeletedMessageDraft(text);
+      res.json({ success: true, list });
+    });
+
+    this.app.get("/api/cognitive/layer1/unsaid/analysis", (req, res) => {
+      const analysis = this.inhuman.getUnsaidWordsAnalysis();
+      res.json({ success: true, analysis });
+    });
+
+    this.app.get("/api/cognitive/layer1/parallel", (req, res) => {
+      const conversation = this.inhuman.simulateParallelSelfConversation();
+      res.json({ success: true, conversation });
+    });
+
+    this.app.post("/api/cognitive/layer1/reality", (req, res) => {
+      const { statements } = req.body;
+      const result = this.inhuman.detectRealityDistortion(statements || []);
+      res.json({ success: true, result });
+    });
+
+    this.app.post("/api/cognitive/layer1/iceberg", (req, res) => {
+      const { problem } = req.body;
+      const iceberg = this.inhuman.analyzeIceberg(problem);
+      res.json({ success: true, iceberg });
+    });
+
+    this.app.post("/api/cognitive/layer1/age", (req, res) => {
+      const { vocabulary } = req.body;
+      const age = this.inhuman.calculateCognitiveAge(vocabulary || []);
+      res.json({ success: true, age });
+    });
+
+    // --- LAYER 2 — Beyond Memory ---
+    this.app.post("/api/cognitive/layer2/mentors", (req, res) => {
+      const { question, mentors } = req.body;
+      const feedback = this.inhuman.consultMentorBoard(question, mentors);
+      res.json({ success: true, feedback });
+    });
+
+    this.app.post("/api/cognitive/layer2/narrative", (req, res) => {
+      const { statement } = req.body;
+      const identities = this.inhuman.trackNarrativeIdentity(statement);
+      res.json({ success: true, identities });
+    });
+
+    this.app.post("/api/cognitive/layer2/loops", (req, res) => {
+      const { thought } = req.body;
+      const loops = this.inhuman.detectUnfinishedLoops(thought);
+      res.json({ success: true, loops });
+    });
+
+    this.app.post("/api/cognitive/layer2/palace", (req, res) => {
+      const { topic, concepts } = req.body;
+      const palace = this.inhuman.buildMemoryPalace(topic, concepts || []);
+      res.json({ success: true, palace });
+    });
+
+    this.app.post("/api/cognitive/layer2/nostalgia", (req, res) => {
+      const { pastTopic } = req.body;
+      const report = this.inhuman.getAntiNostalgiaReport(pastTopic);
+      res.json({ success: true, report });
+    });
+
+    // --- LAYER 3 — Beyond Intelligence ---
+    this.app.post("/api/cognitive/layer3/chaos", (req, res) => {
+      const { situation } = req.body;
+      const lever = this.inhuman.getChaosLever(situation);
+      res.json({ success: true, lever });
+    });
+
+    this.app.post("/api/cognitive/layer3/inversion", (req, res) => {
+      const { goal } = req.body;
+      const plan = this.inhuman.runInversionPlan(goal);
+      res.json({ success: true, plan });
+    });
+
+    this.app.post("/api/cognitive/layer3/overton", (req, res) => {
+      const { belief } = req.body;
+      const shift = this.inhuman.shiftOvertonWindow(belief);
+      res.json({ success: true, shift });
+    });
+
+    this.app.post("/api/cognitive/layer3/humility", (req, res) => {
+      const { didChange } = req.body;
+      const score = this.inhuman.scoreEpistemicHumility(didChange);
+      res.json({ success: true, score });
+    });
+
+    this.app.post("/api/cognitive/layer3/signalnoise", (req, res) => {
+      const { items } = req.body;
+      const classification = this.inhuman.classifySignalVsNoise(items || []);
+      res.json({ success: true, classification });
+    });
+
+    // --- LAYER 4 — Beyond Time ---
+    this.app.post("/api/cognitive/layer4/check10", (req, res) => {
+      const { decision } = req.body;
+      const check = this.inhuman.run101010Check(decision);
+      res.json({ success: true, check });
+    });
+
+    this.app.post("/api/cognitive/layer4/ledger", (req, res) => {
+      const { area, hours, energy, ROI } = req.body;
+      const ledger = this.inhuman.logLifeLedger(area, hours, energy, ROI);
+      res.json({ success: true, ledger });
+    });
+
+    this.app.post("/api/cognitive/layer4/deathbed", (req, res) => {
+      const { worry } = req.body;
+      const filter = this.inhuman.filterDeathbedPerspective(worry);
+      res.json({ success: true, filter });
+    });
+
+    this.app.get("/api/cognitive/layer4/momentum", (req, res) => {
+      const momentum = this.inhuman.getMomentumStats();
+      res.json({ success: true, momentum });
+    });
+
+    this.app.get("/api/cognitive/layer4/gratitude", (req, res) => {
+      const gratitude = this.inhuman.getTemporalGratitude();
+      res.json({ success: true, gratitude });
+    });
+
+    // --- LAYER 5 — Beyond Human ---
+    this.app.post("/api/cognitive/layer5/premortem", (req, res) => {
+      const { planName } = req.body;
+      const preMortem = this.inhuman.runPreMortemAnalysis(planName);
+      res.json({ success: true, preMortem });
+    });
+
+    this.app.get("/api/cognitive/layer5/emergence", (req, res) => {
+      const emergence = this.inhuman.detectEmergence();
+      res.json({ success: true, emergence });
+    });
+
+    this.app.post("/api/cognitive/layer5/destructor", (req, res) => {
+      const { idea } = req.body;
+      const destruction = this.inhuman.destroyIdea(idea);
+      res.json({ success: true, destruction });
+    });
+
+    this.app.post("/api/cognitive/layer5/risks", (req, res) => {
+      const { worries } = req.body;
+      const ranked = this.inhuman.rankExistentialRisks(worries || []);
+      res.json({ success: true, ranked });
+    });
+
+    this.app.get("/api/cognitive/layer5/identity", (req, res) => {
+      const test = this.inhuman.runIdentityStressTest();
+      res.json({ success: true, test });
+    });
+
+    // --- LAYER 6 — Truly Inhuman ---
+    this.app.post("/api/cognitive/layer6/predict", (req, res) => {
+      const { predictionText, probability } = req.body;
+      const market = this.inhuman.logBehavioralPrediction(predictionText, probability);
+      res.json({ success: true, market });
+    });
+
+    this.app.get("/api/cognitive/layer6/predictions", (req, res) => {
+      const reports = this.inhuman.getPredictionMarketReports();
+      res.json({ success: true, reports });
+    });
+
+    this.app.post("/api/cognitive/layer6/dissolve", (req, res) => {
+      const { situation } = req.body;
+      const rawRaw = this.inhuman.dissolveEgo(situation);
+      res.json({ success: true, rawRaw });
+    });
+
+    this.app.get("/api/cognitive/layer6/feed", (req, res) => {
+      const feed = this.inhuman.getCollectiveUnconsciousData();
+      res.json({ success: true, feed });
+    });
+
+    this.app.post("/api/cognitive/layer6/final", (req, res) => {
+      const { options } = req.body;
+      const choice = this.inhuman.getFinalAnswer(options || []);
+      res.json({ success: true, choice });
+    });
+
+    this.app.post("/api/cognitive/layer6/continuity", (req, res) => {
+      const { belief } = req.body;
+      const logs = this.inhuman.logContinuityStep(belief);
+      res.json({ success: true, logs });
+    });
+
     // Socket.IO for real-time chat
     this.io.on("connection", (socket) => {
       const sessionId = `web_${socket.id}`;

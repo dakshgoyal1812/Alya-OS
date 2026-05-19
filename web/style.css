@@ -1788,3 +1788,61 @@ html, body {
   box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
   border-left: 3px solid var(--accent-500);
 }
+
+/* --- Global Button Styling --- */
+.btn-primary, .btn-secondary {
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  transition: all 0.25s var(--ease-out);
+  font-weight: 550;
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-500), #0891b2);
+  color: white;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.15);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, var(--accent-400), #0ea5e9);
+  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border-color: rgba(6, 182, 212, 0.3);
+}
+
+.btn-secondary:active {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Sub-layer active state styling */
+.btn-secondary.active {
+  background: rgba(6, 182, 212, 0.15) !important;
+  border-color: var(--accent-500) !important;
+  color: var(--accent-300) !important;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+}
+
