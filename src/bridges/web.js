@@ -17,6 +17,7 @@ import { TimeCapsuleManager, ForgetModeManager, GrowthReportGenerator } from "..
 import { WorkflowSuperpowersManager } from "../core/workflows.js";
 import { AdvancedMemoryEngine } from "../core/advanced_memory.js";
 import { ExperimentalMindEngine } from "../core/experimental_mind.js";
+import { AIFirewallShield, AIRoutingEngine } from "../core/security_router.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -66,6 +67,8 @@ export class WebBridge {
     this.workflows = new WorkflowSuperpowersManager();
     this.memoryEngine = new AdvancedMemoryEngine();
     this.experimental = new ExperimentalMindEngine();
+    this.firewall = new AIFirewallShield();
+    this.router = new AIRoutingEngine();
   }
 
   async start() {
@@ -411,6 +414,15 @@ export class WebBridge {
       }
     });
 
+    // 🛡️ Security Shield & Cost routing info
+    this.app.get("/api/security/stats", (req, res) => {
+      res.json({
+        success: true,
+        threats: this.firewall.threatLog,
+        costStats: this.router.stats
+      });
+    });
+
     // Socket.IO for real-time chat
     this.io.on("connection", (socket) => {
       const sessionId = `web_${socket.id}`;
@@ -465,6 +477,27 @@ export class WebBridge {
         }
 
         let finalMessage = message || "";
+
+        // 1. AI Firewall Prompt Injection Scan
+        const scan = this.firewall.scanPrompt(finalMessage);
+        if (scan.blocked) {
+          socket.emit("stream", { content: `⚠️ Alya AI Firewall Blocked: Prompt injection pattern detected (${scan.score}% threat level).` });
+          socket.emit("stream_end", {
+            role: "assistant",
+            content: `⚠️ Alya AI Firewall Blocked: Prompt injection pattern detected (${scan.score}% threat level).`,
+            timestamp: new Date().toISOString()
+          });
+          return;
+        }
+
+        // 2. Intelligent Cost Router
+        const routing = this.router.routeTask(finalMessage, options?.routingMode);
+        socket.emit("security_routing", {
+          optimalModel: routing.optimalModel,
+          estimatedLatency: routing.estimatedLatency,
+          estimatedCostUSD: routing.estimatedCostUSD,
+          accumulatedStats: routing.accumulatedStats
+        });
         
         // 1. Process Slash Commands & Custom Macros
         const triggerResult = this.workflows.processPromptTriggers(finalMessage);

@@ -1891,9 +1891,63 @@
     }
   });
 
+  // Socket triggers for AI Firewall & Security routing
+  socket.on("security_routing", (data) => {
+    const modelEl = document.getElementById("routing-model");
+    const latencyEl = document.getElementById("routing-latency");
+    const queryCostEl = document.getElementById("routing-query-cost");
+    const totalCostEl = document.getElementById("routing-total-cost");
+
+    if (modelEl) modelEl.textContent = data.optimalModel;
+    if (latencyEl) latencyEl.textContent = data.estimatedLatency;
+    if (queryCostEl) queryCostEl.textContent = `$${data.estimatedCostUSD.toFixed(5)} USD`;
+    if (totalCostEl) totalCostEl.textContent = `$${data.accumulatedStats.totalCostUSD.toFixed(4)} USD`;
+    
+    // Auto refresh logs when threats occur
+    loadSecurityStats();
+  });
+
+  async function loadSecurityStats() {
+    try {
+      const res = await fetch("/api/security/stats");
+      const data = await res.json();
+      if (data.success) {
+        const totalCostEl = document.getElementById("routing-total-cost");
+        if (totalCostEl && data.costStats) {
+          totalCostEl.textContent = `$${data.costStats.totalCostUSD.toFixed(4)} USD`;
+        }
+
+        const logsEl = document.getElementById("firewall-logs");
+        const statusEl = document.getElementById("firewall-status");
+        if (logsEl) {
+          if (!data.threats || data.threats.length === 0) {
+            logsEl.innerHTML = `<div style="color: var(--text-400); text-align: center;">No intrusion threats logged.</div>`;
+            if (statusEl) {
+              statusEl.textContent = "🛡️ Secure & Encrypted";
+              statusEl.style.color = "#10b981";
+            }
+          } else {
+            logsEl.innerHTML = data.threats.map(t => {
+              return `<div style="color: #ef4444; border-bottom: 1px solid rgba(239, 68, 68, 0.15); padding: 4px 0; line-height:1.2;">
+                [${new Date(t.timestamp).toLocaleTimeString()}] Score: ${t.threatScore}<br>
+                Pattern: "${t.matchedPattern}"<br>
+                Input: "${t.promptPreview}"
+              </div>`;
+            }).join("");
+            if (statusEl) {
+              statusEl.textContent = "⚠️ Intrusion Prevented";
+              statusEl.style.color = "#f59e0b";
+            }
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
   // Query experimental stats on mount
   async function loadExperimentalStats() {
     try {
+      loadSecurityStats();
       const res = await fetch("/api/experimental/stats");
       const data = await res.json();
       if (data.success && data.state) {
