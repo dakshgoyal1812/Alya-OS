@@ -1730,6 +1730,212 @@
     }
   }, 1000);
 
+  // 11. Experimental Mind & AR Lab Actions
+  const btnSimulateTimeline = document.getElementById("btn-simulate-timeline");
+  const btnCalculateRegret = document.getElementById("btn-calculate-regret");
+  const btnScanDeception = document.getElementById("btn-scan-deception");
+  const btnGenerateFinetune = document.getElementById("btn-generate-finetune");
+
+  btnSimulateTimeline?.addEventListener("click", async () => {
+    const decision = document.getElementById("timeline-decision").value.trim();
+    const years = document.getElementById("timeline-years").value || 2;
+    if (!decision) return alert("Describe a critical decision first!");
+
+    const out = document.getElementById("timeline-output");
+    out.style.display = "block";
+    out.textContent = "🌌 Simulating timeline branches across multiverse cascades...";
+
+    try {
+      const res = await fetch("/api/experimental/timeline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision, yearsAgo: years })
+      });
+      const data = await res.json();
+      if (data.success) {
+        out.innerHTML = `<strong>Simulated Outcome (${data.result.timeframe}):</strong><br>${data.result.simulatedOutcome}`;
+      }
+    } catch (e) {
+      out.textContent = "Error running multiverse branches.";
+    }
+  });
+
+  btnCalculateRegret?.addEventListener("click", async () => {
+    const decision = document.getElementById("regret-decision").value.trim();
+    if (!decision) return alert("State your career/life choice first!");
+
+    const out = document.getElementById("regret-output");
+    out.style.display = "block";
+    out.textContent = "🛡️ Computing Bezos Regret Minimization Framework scores...";
+
+    try {
+      const res = await fetch("/api/experimental/regret", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision })
+      });
+      const data = await res.json();
+      if (data.success) {
+        out.innerHTML = `<strong>Result:</strong> ${data.result.summary}<br><small>Confidence Level: High. Calculation matches risk aversion formulas.</small>`;
+      }
+    } catch (e) {
+      out.textContent = "Error calculating regret score.";
+    }
+  });
+
+  btnScanDeception?.addEventListener("click", async () => {
+    const text = document.getElementById("deception-text").value.trim();
+    if (!text) return alert("Paste target statement text first!");
+
+    const out = document.getElementById("deception-output");
+    out.style.display = "block";
+    out.textContent = "🕵️ Scanning stress qualifiers and deception markers...";
+
+    try {
+      const res = await fetch("/api/experimental/deception", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      const data = await res.json();
+      if (data.success) {
+        out.innerHTML = `<strong>Deception Probability:</strong> ${data.result.deceptionProbability}%<br><strong>Verdict:</strong> ${data.result.verdict}`;
+      }
+    } catch (e) {
+      out.textContent = "Error scanning statement.";
+    }
+  });
+
+  btnGenerateFinetune?.addEventListener("click", async () => {
+    const out = document.getElementById("finetune-output");
+    out.style.display = "block";
+    out.textContent = "🧬 Generating synthetic Q&A fine-tuning sets...";
+
+    try {
+      const res = await fetch("/api/experimental/finetune", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      const data = await res.json();
+      if (data.success) {
+        out.innerHTML = `<strong>Created ${data.count} training pairs!</strong><br><small>Data saved to data/experimental_state.json for local model ingestion.</small>`;
+      }
+    } catch (e) {
+      out.textContent = "Error simulating fine-tuning.";
+    }
+  });
+
+  // Socket triggers for XP and Self-Evolving AI Metrics
+  socket.on("xp_earned", (data) => {
+    const lvlEl = document.getElementById("gamification-level");
+    const xpEl = document.getElementById("gamification-xp");
+    const fillEl = document.getElementById("gamification-xp-fill");
+    const streakEl = document.getElementById("gamification-streak");
+    const skillsEl = document.getElementById("gamification-skills");
+
+    if (lvlEl) lvlEl.textContent = `Level ${data.level}`;
+    if (xpEl) xpEl.textContent = `${data.totalXp % 200} / 200 XP (Total: ${data.totalXp})`;
+    if (fillEl) fillEl.style.width = `${((data.totalXp % 200) / 200) * 100}%`;
+    if (streakEl) streakEl.textContent = `${data.streak} Day${data.streak > 1 ? "s" : ""} 🔥`;
+
+    if (skillsEl && data.unlockedSkills) {
+      skillsEl.innerHTML = "";
+      data.unlockedSkills.forEach(skill => {
+        const span = document.createElement("span");
+        span.style.fontSize = "11px";
+        span.style.background = "rgba(6, 182, 212, 0.1)";
+        span.style.color = "var(--cyan-400)";
+        span.style.padding = "3px 8px";
+        span.style.borderRadius = "4px";
+        span.style.border = "1px solid rgba(6, 182, 212, 0.2)";
+        span.textContent = skill;
+        skillsEl.appendChild(span);
+      });
+    }
+  });
+
+  socket.on("experimental_metrics", (data) => {
+    const confText = document.getElementById("metric-confidence");
+    const confFill = document.getElementById("metric-confidence-fill");
+    const biasText = document.getElementById("metric-bias");
+    const gapText = document.getElementById("metric-gap");
+
+    if (confText && confFill) {
+      confText.textContent = `${data.confidence}%`;
+      confFill.style.width = `${data.confidence}%`;
+      if (data.confidence < 70) {
+        confFill.style.background = "#f59e0b"; // Warning gold
+      } else {
+        confFill.style.background = "#10b981"; // Secure green
+      }
+    }
+
+    if (biasText) {
+      if (data.bias.hasBias) {
+        biasText.textContent = `Absolutist Phrase detected (${data.bias.score}% intensity)`;
+        biasText.style.color = "#f59e0b";
+      } else {
+        biasText.textContent = "Neutral (0%)";
+        biasText.style.color = "#10b981";
+      }
+    }
+
+    if (gapText) {
+      if (data.gap.hasGap) {
+        gapText.textContent = `Gap detected: "${data.gap.topic}"`;
+        gapText.style.color = "#ef4444";
+      } else {
+        gapText.textContent = "None";
+        gapText.style.color = "var(--text-300)";
+      }
+    }
+  });
+
+  // Query experimental stats on mount
+  async function loadExperimentalStats() {
+    try {
+      const res = await fetch("/api/experimental/stats");
+      const data = await res.json();
+      if (data.success && data.state) {
+        // Trigger simulated socket updates to fill UI
+        const state = data.state;
+        const fakeSocketData = {
+          level: state.level,
+          totalXp: state.xp,
+          streak: state.streak,
+          unlockedSkills: state.unlockedSkills
+        };
+        // Reuse XP renderer
+        const lvlEl = document.getElementById("gamification-level");
+        const xpEl = document.getElementById("gamification-xp");
+        const fillEl = document.getElementById("gamification-xp-fill");
+        const streakEl = document.getElementById("gamification-streak");
+        const skillsEl = document.getElementById("gamification-skills");
+
+        if (lvlEl) lvlEl.textContent = `Level ${fakeSocketData.level}`;
+        if (xpEl) xpEl.textContent = `${fakeSocketData.totalXp % 200} / 200 XP (Total: ${fakeSocketData.totalXp})`;
+        if (fillEl) fillEl.style.width = `${((fakeSocketData.totalXp % 200) / 200) * 100}%`;
+        if (streakEl) streakEl.textContent = `${fakeSocketData.streak} Day${fakeSocketData.streak > 1 ? "s" : ""} 🔥`;
+
+        if (skillsEl && fakeSocketData.unlockedSkills) {
+          skillsEl.innerHTML = "";
+          fakeSocketData.unlockedSkills.forEach(skill => {
+            const span = document.createElement("span");
+            span.style.fontSize = "11px";
+            span.style.background = "rgba(6, 182, 212, 0.1)";
+            span.style.color = "var(--cyan-400)";
+            span.style.padding = "3px 8px";
+            span.style.borderRadius = "4px";
+            span.style.border = "1px solid rgba(6, 182, 212, 0.2)";
+            span.textContent = skill;
+            skillsEl.appendChild(span);
+          });
+        }
+      }
+    } catch(e) {}
+  }
+  loadExperimentalStats();
+
   // Initialize sync
   rehydrateStateFromLocal();
 

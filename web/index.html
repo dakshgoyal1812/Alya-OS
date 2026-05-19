@@ -172,6 +172,7 @@
           <button class="tab-btn" data-tab="dreamspace-pane">🧬 Cognitive Graph</button>
           <button class="tab-btn" data-tab="automation-pane">⚙️ Automations</button>
           <button class="tab-btn" data-tab="creator-pane">⚡ Creator & Coder</button>
+          <button class="tab-btn" data-tab="experimental-pane">🌌 AR Mind Lab</button>
         </div>
 
         <div class="header-controls">
@@ -519,6 +520,118 @@
                 </div>
                 <button class="btn-primary" id="btn-sandbox-run" style="width: 100%;">Evaluate Sandbox Code</button>
                 <div id="sandbox-output" class="console-box" style="margin-top: 12px; display: none;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANE 5: Experimental Mind & Reality Augmentation Lab -->
+        <div id="experimental-pane" class="tab-pane">
+          <div class="creator-panel-container">
+            <!-- Left Column: Self-Evolving & Surveillance -->
+            <div class="creator-left-column">
+              <!-- Gamification & Dopamine XP Card -->
+              <div class="creator-card">
+                <h4>🎮 Gamification & Dopamine Panel</h4>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                  <span>Intelligence Level:</span>
+                  <span id="gamification-level" style="font-weight: bold; color: var(--cyan-400);">Level 1</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                  <span>Experience Points (XP):</span>
+                  <span id="gamification-xp">0 / 200 XP</span>
+                </div>
+                <div class="progress-bar"><div id="gamification-xp-fill" class="progress-fill" style="width: 0%; background: var(--cyan-400);"></div></div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 8px;">
+                  <span>Daily Check-in Streak:</span>
+                  <span id="gamification-streak" style="color: #f59e0b; font-weight: bold;">1 Day 🔥</span>
+                </div>
+                <div style="margin-top: 12px;">
+                  <h6 style="color: var(--text-400); margin-bottom: 6px;">Unlocked Skill Tree:</h6>
+                  <div id="gamification-skills" style="display: flex; flex-wrap: wrap; gap: 6px;">
+                    <span style="font-size: 11px; background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);">Basic Chat</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Self-Evolving AI Metrics Card -->
+              <div class="creator-card" style="margin-top: 15px;">
+                <h4>🧬 Self-Evolving AI & Response Integrity</h4>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+                  <span>Alya Response Confidence:</span>
+                  <span id="metric-confidence" style="font-weight: bold; color: #10b981;">98%</span>
+                </div>
+                <div class="progress-bar"><div id="metric-confidence-fill" class="progress-fill" style="width: 98%; background: #10b981;"></div></div>
+
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 10px; margin-bottom: 4px;">
+                  <span>Response Bias Level:</span>
+                  <span id="metric-bias" style="color: #6366f1;">Neutral (0%)</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 8px;">
+                  <span>Knowledge Gap Detection:</span>
+                  <span id="metric-gap" style="color: var(--text-300);">None</span>
+                </div>
+                <button class="btn-secondary" id="btn-generate-finetune" style="width:100%; margin-top: 12px; font-size: 11px;">Generate Synthetic Q&A Fine-Tuning Pairs</button>
+                <div id="finetune-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+              </div>
+
+              <!-- Surveillance & Deception Scanner -->
+              <div class="creator-card" style="margin-top: 15px;">
+                <h4>🕵️ Lie & Deception Probability Scanner</h4>
+                <div class="form-group">
+                  <label>Paste statement or message body to audit:</label>
+                  <textarea id="deception-text" rows="3" placeholder="e.g. Honestly, believe me, I will literally do it tomorrow morning trust me..." style="width: 100%; border-radius: 6px; background: var(--bg-900); border: 1px solid var(--border-subtle); color: var(--text-200); font-family: inherit; font-size: 12px; padding: 6px; box-sizing: border-box;"></textarea>
+                </div>
+                <button class="btn-primary" id="btn-scan-deception" style="width:100%;">Audit Statement Credibility</button>
+                <div id="deception-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+              </div>
+            </div>
+
+            <!-- Right Column: Reality Augmentation -->
+            <div class="creator-right-column">
+              <!-- Alternate Timeline Simulator Card -->
+              <div class="creator-card">
+                <h4>🌌 Alternate Reality Timeline Simulator</h4>
+                <div class="form-group">
+                  <label>Describe a critical decision or fork in your life path:</label>
+                  <input type="text" id="timeline-decision" placeholder="e.g., Decided to start learning web development instead of finance" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                </div>
+                <div class="form-group" style="margin-top: 8px;">
+                  <label>Timeframe (How many years ago):</label>
+                  <input type="number" id="timeline-years" value="2" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                </div>
+                <button class="btn-primary" id="btn-simulate-timeline" style="width: 100%; margin-top: 8px;">Simulate Timeline Branches</button>
+                <div id="timeline-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+              </div>
+
+              <!-- Regret Minimization Engine Card -->
+              <div class="creator-card" style="margin-top: 15px;">
+                <h4>🛡️ Bezos Regret Minimization Engine</h4>
+                <div class="form-group">
+                  <label>Current career/life decision or opportunity:</label>
+                  <input type="text" id="regret-decision" placeholder="e.g. Quitting my job to launch an AI application" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                </div>
+                <button class="btn-primary" id="btn-calculate-regret" style="width: 100%; margin-top: 8px;">Evaluate Regret Probability</button>
+                <div id="regret-output" class="console-box" style="margin-top: 10px; display: none;"></div>
+              </div>
+
+              <!-- Privacy Fortress Settings -->
+              <div class="creator-card" style="margin-top: 15px;">
+                <h4>🔐 Privacy & Security Fortress</h4>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Zero Knowledge Mode:</span>
+                    <input type="checkbox" id="check-zero-knowledge">
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Decoy Safe Mode (Duress Protection):</span>
+                    <input type="checkbox" id="check-decoy-mode">
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Ghost Protocol (Zero Session Cache):</span>
+                    <input type="checkbox" id="check-ghost-protocol">
+                  </div>
+                </div>
               </div>
             </div>
           </div>

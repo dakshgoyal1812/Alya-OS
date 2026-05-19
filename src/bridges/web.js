@@ -16,6 +16,7 @@ import { CognitiveMirrorEngine, DecisionFatigueDetector } from "../core/cognitio
 import { TimeCapsuleManager, ForgetModeManager, GrowthReportGenerator } from "../core/time_memory.js";
 import { WorkflowSuperpowersManager } from "../core/workflows.js";
 import { AdvancedMemoryEngine } from "../core/advanced_memory.js";
+import { ExperimentalMindEngine } from "../core/experimental_mind.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -64,6 +65,7 @@ export class WebBridge {
     this.timeCapsule = new TimeCapsuleManager();
     this.workflows = new WorkflowSuperpowersManager();
     this.memoryEngine = new AdvancedMemoryEngine();
+    this.experimental = new ExperimentalMindEngine();
   }
 
   async start() {
@@ -365,6 +367,50 @@ export class WebBridge {
       }
     });
 
+    // 🌌 Experimental Mind & AR Lab routes
+    this.app.get("/api/experimental/stats", (req, res) => {
+      res.json({ success: true, state: this.experimental.state });
+    });
+
+    this.app.post("/api/experimental/timeline", (req, res) => {
+      try {
+        const { decision, yearsAgo } = req.body;
+        const result = this.experimental.simulateAlternateTimeline(decision, yearsAgo);
+        res.json({ success: true, result });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    this.app.post("/api/experimental/regret", (req, res) => {
+      try {
+        const { decision } = req.body;
+        const result = this.experimental.calculateRegretMinimization(decision);
+        res.json({ success: true, result });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    this.app.post("/api/experimental/deception", (req, res) => {
+      try {
+        const { text } = req.body;
+        const result = this.experimental.scanDeceptionLikelihood(text);
+        res.json({ success: true, result });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    this.app.post("/api/experimental/finetune", (req, res) => {
+      try {
+        const result = this.experimental.generateFineTuneData([]);
+        res.json({ success: true, count: result.length, pairs: result });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
     // Socket.IO for real-time chat
     this.io.on("connection", (socket) => {
       const sessionId = `web_${socket.id}`;
@@ -438,6 +484,10 @@ export class WebBridge {
         this.memoryEngine.autoExtractSemanticFacts(finalMessage);
         const recalledFacts = this.memoryEngine.querySemanticMemory(finalMessage, 3);
 
+        // 6. Reward XP for analytical exploration & thinking
+        const xpResult = this.experimental.rewardUserXP(finalMessage);
+        socket.emit("xp_earned", xpResult);
+
         const history = getHistory("web", sessionId);
 
         // Prepend custom prompt modifiers if command trigger was used
@@ -475,6 +525,12 @@ export class WebBridge {
             content: fullResponse,
             timestamp: new Date().toISOString(),
           });
+
+          // Calculate and emit experimental mind metrics
+          const confidence = this.experimental.calculateConfidenceScore(fullResponse);
+          const bias = this.experimental.detectResponseBias(fullResponse);
+          const gap = this.experimental.detectKnowledgeGaps(finalMessage);
+          socket.emit("experimental_metrics", { confidence, bias, gap });
 
           // Generate voice for the response
           const audioPath = await generateTTS(fullResponse, voiceId);
