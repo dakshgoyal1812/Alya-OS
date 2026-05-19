@@ -817,12 +817,7 @@ export class WebBridge {
           const gap = this.experimental.detectKnowledgeGaps(finalMessage);
           socket.emit("experimental_metrics", { confidence, bias, gap });
 
-          // Generate voice for the response
-          const audioPath = await generateTTS(fullResponse, voiceId);
-          if (audioPath) {
-            const fileName = path.basename(audioPath);
-            socket.emit("voice", { url: `/temp/${fileName}` });
-          }
+
         } catch (error) {
           console.error("❌ Web Chat Stream error:", error);
           socket.emit("stream_end", {
