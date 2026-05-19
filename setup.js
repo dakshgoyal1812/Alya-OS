@@ -8,7 +8,7 @@ import inquirer from "inquirer";
 import chalk from "chalk";
 import ora from "ora";
 import figlet from "figlet";
-import { writeFileSync, mkdirSync, existsSync } from "fs";
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -36,13 +36,29 @@ async function main() {
   console.log(d("  This will walk you through connecting your accounts."));
   console.log(d("  Everything stays local on your machine. 🔒\n"));
 
+  // Load existing config to merge instead of overwriting
+  let existingConfig = {};
+  if (existsSync(CONFIG_PATH)) {
+    try {
+      existingConfig = JSON.parse(readFileSync(CONFIG_PATH, "utf8"));
+    } catch (e) {
+      console.warn("  ⚠️  Could not load existing config:", e.message);
+    }
+  }
+
   const config = {
-    ollama: {},
-    web: { enabled: true, port: 3000 },
-    discord: { enabled: false },
-    telegram: { enabled: false },
-    slack: { enabled: false },
-    whatsapp: { enabled: false },
+    ollama: existingConfig.ollama || {},
+    web: existingConfig.web || { enabled: true, port: 3000 },
+    discord: existingConfig.discord || { enabled: false },
+    telegram: existingConfig.telegram || { enabled: false },
+    slack: existingConfig.slack || { enabled: false },
+    whatsapp: existingConfig.whatsapp || { enabled: false },
+    groq: existingConfig.groq || {},
+    email: existingConfig.email || {},
+    elevenlabs: existingConfig.elevenlabs || {},
+    spotify: existingConfig.spotify || {},
+    twitter: existingConfig.twitter || {},
+    instagram: existingConfig.instagram || {},
   };
 
   // ── Step 1: Groq API Setup ──────────────────────────────────
@@ -55,6 +71,7 @@ async function main() {
       type: "input",
       name: "apiKey",
       message: r("✨") + " Your Groq API Key:",
+      default: config.groq.apiKey || undefined,
       validate: (input) => input.startsWith("gsk_") ? true : "Groq API keys usually start with 'gsk_'",
     },
     {
@@ -62,14 +79,22 @@ async function main() {
       name: "model",
       message: r("✨") + " Which model to use?",
       choices: ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
-      default: "llama-3.3-70b-versatile",
+      default: config.groq.model || "llama-3.3-70b-versatile",
     },
   ]);
 
   config.groq = {
+    ...config.groq,
     apiKey: groqAnswers.apiKey,
     model: groqAnswers.model,
   };
+
+  // Ensure apiKeys array contains this key
+  if (!config.groq.apiKeys) {
+    config.groq.apiKeys = [groqAnswers.apiKey];
+  } else if (!config.groq.apiKeys.includes(groqAnswers.apiKey)) {
+    config.groq.apiKeys.unshift(groqAnswers.apiKey);
+  }
 
   console.log(g("\n  ✓ Groq API Key Saved"));
 
@@ -82,17 +107,18 @@ async function main() {
       type: "confirm",
       name: "enabled",
       message: r("🦞") + " Enable the web dashboard?",
-      default: true,
+      default: config.web.enabled !== false,
     },
     {
       type: "number",
       name: "port",
       message: r("🦞") + " Dashboard port:",
-      default: 3000,
+      default: config.web.port || 3000,
       when: (a) => a.enabled,
     },
   ]);
-  config.web = { enabled: webAnswers.enabled, port: webAnswers.port || 3000 };
+  config.web = { ...config.web, enabled: webAnswers.enabled, port: webAnswers.port || 3000 };
+
 
   // ── Step 3: Chat Bridges ─────────────────────────────────
   console.log(bold("\n  🔗 Step 3: Chat Platform Bridges\n"));
@@ -125,10 +151,13 @@ async function main() {
         type: "password",
         name: "token",
         message: r("🦞") + " Discord bot token:",
+        default: config.discord.token || undefined,
         mask: "•",
       },
     ]);
-    config.discord = { enabled: true, token: discordAnswers.token };
+    config.discord = { ...config.discord, enabled: true, token: discordAnswers.token };
+  } else {
+    config.discord.enabled = false;
   }
 
   // ── Telegram Setup ──
@@ -142,10 +171,13 @@ async function main() {
         type: "password",
         name: "token",
         message: r("🦞") + " Telegram bot token:",
+        default: config.telegram.token || undefined,
         mask: "•",
       },
     ]);
-    config.telegram = { enabled: true, token: telegramAnswers.token };
+    config.telegram = { ...config.telegram, enabled: true, token: telegramAnswers.token };
+  } else {
+    config.telegram.enabled = false;
   }
 
   // ── Slack Setup ──
@@ -160,22 +192,27 @@ async function main() {
         type: "password",
         name: "botToken",
         message: r("🦞") + " Bot Token (xoxb-...):",
+        default: config.slack.botToken || undefined,
         mask: "•",
       },
       {
         type: "password",
         name: "appToken",
         message: r("🦞") + " App Token (xapp-...):",
+        default: config.slack.appToken || undefined,
         mask: "•",
       },
       {
         type: "password",
         name: "signingSecret",
         message: r("🦞") + " Signing Secret:",
+        default: config.slack.signingSecret || undefined,
         mask: "•",
       },
     ]);
-    config.slack = { enabled: true, ...slackAnswers };
+    config.slack = { ...config.slack, enabled: true, ...slackAnswers };
+  } else {
+    config.slack.enabled = false;
   }
 
   // ── WhatsApp Setup ──
@@ -190,10 +227,12 @@ async function main() {
         type: "confirm",
         name: "enabled",
         message: r("🦞") + " Enable WhatsApp bridge?",
-        default: true,
+        default: config.whatsapp.enabled !== false,
       },
     ]);
-    config.whatsapp = { enabled: waAnswers.enabled };
+    config.whatsapp = { ...config.whatsapp, enabled: waAnswers.enabled };
+  } else {
+    config.whatsapp.enabled = false;
   }
 
   // ── Step 4: Email Setup ──────────────────────────────────
@@ -206,7 +245,7 @@ async function main() {
       type: "confirm",
       name: "enabled",
       message: r("✨") + " Enable email sending?",
-      default: false,
+      default: config.email.enabled === true,
     },
   ]);
 
@@ -216,18 +255,21 @@ async function main() {
         type: "input",
         name: "user",
         message: r("✨") + " Your Gmail address:",
+        default: config.email.user || undefined,
       },
       {
         type: "password",
         name: "pass",
         message: r("✨") + " Your Gmail App Password (NOT your normal password):",
+        default: config.email.pass || undefined,
         mask: "•",
       },
     ]);
-    config.email = { enabled: true, service: "gmail", user: emailAnswers.user, pass: emailAnswers.pass };
+    config.email = { ...config.email, enabled: true, service: "gmail", user: emailAnswers.user, pass: emailAnswers.pass };
   } else {
-    config.email = { enabled: false };
+    config.email = { ...config.email, enabled: false };
   }
+
 
   // ── Save Config ──────────────────────────────────────────
   console.log(bold("\n  💾 Saving Configuration\n"));
