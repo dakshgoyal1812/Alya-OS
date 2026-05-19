@@ -21,12 +21,22 @@
   const bridgeList = document.getElementById("bridge-list");
   const chips = document.querySelectorAll(".chip");
 
-  // Image Upload Elements
+  // Image & Document Upload Elements
   const attachBtn = document.getElementById("btn-attach");
+  const attachPopover = document.getElementById("attach-popover");
+  const popoverAttachImage = document.getElementById("popover-attach-image");
+  const popoverAttachDoc = document.getElementById("popover-attach-doc");
   const fileInput = document.getElementById("image-upload");
+  const docFileInput = document.getElementById("file-upload");
   const previewContainer = document.getElementById("image-preview-container");
   const previewImg = document.getElementById("image-preview");
   const cancelImgBtn = document.getElementById("btn-cancel-image");
+
+  // Document File Preview Elements
+  const filePreviewContainer = document.getElementById("file-preview-container");
+  const filePreviewName = document.getElementById("file-preview-name");
+  const filePreviewSize = document.getElementById("file-preview-size");
+  const btnCancelFile = document.getElementById("btn-cancel-file");
 
   // Audio Canvas Visualizer
   const voiceCanvas = document.getElementById("voice-canvas");
@@ -120,24 +130,56 @@
     };
   });
 
-  // Attached Image state
+  // Attachment State
   let attachedImageBase64 = null;
   let attachedImageMime = null;
+  let attachedDocText = null;
+  let attachedDocName = null;
+  let docChunks = [];
 
   function clearAttachment() {
     attachedImageBase64 = null;
     attachedImageMime = null;
+    attachedDocText = null;
+    attachedDocName = null;
+    docChunks = [];
     if (fileInput) fileInput.value = "";
+    if (docFileInput) docFileInput.value = "";
     if (previewContainer) previewContainer.style.display = "none";
     if (previewImg) previewImg.src = "";
+    if (filePreviewContainer) filePreviewContainer.style.display = "none";
   }
 
-  // --- Image Upload Handling ---
-  if (attachBtn && fileInput) {
-    attachBtn.addEventListener("click", () => {
-      fileInput.click();
+  // --- Attachment Popover & Upload Handling ---
+  if (attachBtn) {
+    attachBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isVisible = attachPopover.style.display === "flex";
+      attachPopover.style.display = isVisible ? "none" : "flex";
     });
 
+    // Hide popover when clicking anywhere else
+    document.addEventListener("click", () => {
+      if (attachPopover) attachPopover.style.display = "none";
+    });
+  }
+
+  if (popoverAttachImage && fileInput) {
+    popoverAttachImage.addEventListener("click", () => {
+      clearAttachment();
+      fileInput.click();
+    });
+  }
+
+  if (popoverAttachDoc && docFileInput) {
+    popoverAttachDoc.addEventListener("click", () => {
+      clearAttachment();
+      docFileInput.click();
+    });
+  }
+
+  // Handle Image upload selection
+  if (fileInput) {
     fileInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (file && file.type.startsWith("image/")) {
@@ -153,8 +195,54 @@
     });
   }
 
+  // Handle Document upload selection (RAG Chunking)
+  if (docFileInput) {
+    docFileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        attachedDocName = file.name;
+        const sizeKB = (file.size / 1024).toFixed(1) + " KB";
+        
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          attachedDocText = event.target.result;
+          
+          // Chunking implementation: split by double newline (paragraphs) or ~800 character limits
+          const paragraphs = attachedDocText.split(/\n\s*\n/);
+          docChunks = [];
+          
+          paragraphs.forEach(para => {
+            const cleanPara = para.trim();
+            if (cleanPara.length > 0) {
+              if (cleanPara.length <= 1000) {
+                docChunks.push(cleanPara);
+              } else {
+                // Split large paragraphs into smaller chunks of ~800 characters
+                let start = 0;
+                while (start < cleanPara.length) {
+                  docChunks.push(cleanPara.substring(start, start + 800));
+                  start += 800;
+                }
+              }
+            }
+          });
+          
+          console.log(`📄 Document loaded: ${attachedDocName}. Created ${docChunks.length} search chunks for RAG.`);
+          
+          if (filePreviewName) filePreviewName.textContent = attachedDocName;
+          if (filePreviewSize) filePreviewSize.textContent = sizeKB;
+          if (filePreviewContainer) filePreviewContainer.style.display = "flex";
+        };
+        reader.readAsText(file);
+      }
+    });
+  }
+
   if (cancelImgBtn) {
     cancelImgBtn.addEventListener("click", clearAttachment);
+  }
+  if (btnCancelFile) {
+    btnCancelFile.addEventListener("click", clearAttachment);
   }
 
   // Drag and drop images
@@ -185,6 +273,39 @@
     });
   }
 
+  // --- RAG Text Context Query Helper ---
+  function queryDocumentRAG(query, chunks, topK = 3) {
+    if (!chunks || chunks.length === 0) return "";
+    
+    const tokenize = (text) => {
+      return text.toLowerCase()
+        .replace(/[^\w\s]/g, "")
+        .split(/\s+/)
+        .filter(t => t.length > 2 && !["the", "and", "you", "for", "with", "this", "that"].includes(t));
+    };
+
+    const queryTokens = tokenize(query);
+    if (queryTokens.length === 0) return chunks.slice(0, topK).join("\n\n");
+
+    const scored = chunks.map(chunk => {
+      const chunkTokens = tokenize(chunk);
+      const intersection = queryTokens.filter(t => chunkTokens.includes(t));
+      const score = intersection.length;
+      return { chunk, score };
+    });
+
+    const sorted = scored
+      .filter(s => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topK)
+      .map(s => s.chunk);
+
+    if (sorted.length === 0) {
+      return chunks.slice(0, topK).join("\n\n");
+    }
+    return sorted.join("\n\n");
+  }
+
   // --- Send Message ---
   function sendMessage(text) {
     const msg = text?.trim() || inputEl.value.trim();
@@ -202,6 +323,13 @@
     inputEl.style.height = "auto";
     isStreaming = true;
 
+    // Build payload message with RAG context if document is uploaded
+    let payloadMessage = msg || "";
+    if (docChunks.length > 0 && msg) {
+      const context = queryDocumentRAG(msg, docChunks, 3);
+      payloadMessage = `[RAG Retrieval Context - Document: "${attachedDocName}"]\n${context}\n\nUser Question: ${msg}`;
+    }
+
     // Get Alya OS control center configurations
     const options = {
       routingMode: document.getElementById("select-routing")?.value || "intelligence",
@@ -213,7 +341,7 @@
     setHologramState("thinking");
 
     socket.emit("chat", { 
-      message: msg || "", 
+      message: payloadMessage, 
       image: attachedImageBase64, 
       mimeType: attachedImageMime,
       options: options

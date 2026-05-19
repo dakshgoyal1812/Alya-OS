@@ -382,6 +382,42 @@ export class WebBridge {
         const { message, image, mimeType, voiceId, options } = data;
         if (!message?.trim() && !image) return;
 
+        // Direct slash command handler for /weather
+        if (message && message.trim().startsWith("/weather")) {
+          const city = message.replace("/weather", "").trim();
+          if (!city) {
+            socket.emit("stream", { content: "🌦️ Please provide a city name, e.g., `/weather Mumbai`" });
+            socket.emit("stream_end", {
+              role: "assistant",
+              content: "🌦️ Please provide a city name, e.g., `/weather Mumbai`",
+              timestamp: new Date().toISOString()
+            });
+            return;
+          }
+          socket.emit("typing", true);
+          try {
+            const { executeTool } = await import("../core/tools.js");
+            const weatherResult = await executeTool("get_weather", { city });
+            socket.emit("stream", { content: weatherResult });
+            socket.emit("stream_end", {
+              role: "assistant",
+              content: weatherResult,
+              timestamp: new Date().toISOString()
+            });
+            addMessage("web", sessionId, "user", message);
+            addMessage("web", sessionId, "assistant", weatherResult);
+          } catch (err) {
+            socket.emit("stream", { content: `🌦️ Failed to fetch weather for ${city}` });
+            socket.emit("stream_end", {
+              role: "assistant",
+              content: `🌦️ Failed to fetch weather for ${city}`,
+              timestamp: new Date().toISOString()
+            });
+          }
+          socket.emit("typing", false);
+          return;
+        }
+
         let finalMessage = message || "";
         
         // 1. Process Slash Commands & Custom Macros
@@ -397,6 +433,10 @@ export class WebBridge {
         
         // 4. Decision Fatigue warning
         const isFatigued = this.fatigueDetector.recordQuery(finalMessage);
+
+        // 5. Long-Term Semantic Memory Auto-extraction & Recall
+        this.memoryEngine.autoExtractSemanticFacts(finalMessage);
+        const recalledFacts = this.memoryEngine.querySemanticMemory(finalMessage, 3);
 
         const history = getHistory("web", sessionId);
 
@@ -425,7 +465,7 @@ export class WebBridge {
 
           fullResponse = await this.llm.chatStream(history, finalMessage, (chunk) => {
             socket.emit("stream", { content: chunk });
-          }, options || {});
+          }, { ...(options || {}), recalledFacts });
 
           addMessage("web", sessionId, "user", finalMessage);
           addMessage("web", sessionId, "assistant", fullResponse);

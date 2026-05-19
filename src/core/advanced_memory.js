@@ -24,6 +24,9 @@ export class AdvancedMemoryEngine {
         this.db = JSON.parse(fs.readFileSync(COGNITIVE_FILE, "utf8"));
       } else {
         this.db = {
+          semanticFacts: [
+            { id: 1, text: "User's AI assistant name is Alya", timestamp: new Date().toISOString() }
+          ],
           habits: [
             { id: 1, habit: "User usually reviews system resource stats every afternoon", confidence: 0.85 },
             { id: 2, habit: "User prefers dark cyber neon colors for styling and UI layouts", confidence: 0.90 }
@@ -46,8 +49,11 @@ export class AdvancedMemoryEngine {
         };
         this._saveCognitiveDb();
       }
+      if (!this.db.semanticFacts) {
+        this.db.semanticFacts = [];
+      }
     } catch (e) {
-      this.db = { habits: [], relationships: [], emotionalState: { stress: 0, frustration: 0, excitement: 0.5, confusion: 0 }, temporalTimeline: [] };
+      this.db = { semanticFacts: [], habits: [], relationships: [], emotionalState: { stress: 0, frustration: 0, excitement: 0.5, confusion: 0 }, temporalTimeline: [] };
     }
   }
 
@@ -145,5 +151,77 @@ export class AdvancedMemoryEngine {
   deleteRelationship(from, to) {
     this.db.relationships = this.db.relationships.filter(r => !(r.from === from && r.to === to));
     this._saveCognitiveDb();
+  }
+
+  /**
+   * Add a semantic fact to long-term memory
+   */
+  addSemanticFact(factText) {
+    if (!this.db.semanticFacts) this.db.semanticFacts = [];
+    const exists = this.db.semanticFacts.some(f => f.text.toLowerCase() === factText.toLowerCase());
+    if (!exists) {
+      this.db.semanticFacts.push({
+        id: Date.now(),
+        text: factText,
+        timestamp: new Date().toISOString()
+      });
+      this._saveCognitiveDb();
+      console.log(`🧠 Saved semantic memory fact: "${factText}"`);
+    }
+  }
+
+  /**
+   * Search semantic memories using simple TF-IDF/Jaccard token similarity
+   */
+  querySemanticMemory(queryText, topN = 3) {
+    if (!this.db.semanticFacts || this.db.semanticFacts.length === 0) return [];
+    
+    const tokenize = (text) => {
+      return text.toLowerCase()
+        .replace(/[^\w\s]/g, "")
+        .split(/\s+/)
+        .filter(t => t.length > 2 && !["the", "and", "you", "for", "with", "this", "that", "are", "was"].includes(t));
+    };
+
+    const queryTokens = tokenize(queryText);
+    if (queryTokens.length === 0) return [];
+
+    const scoredFacts = this.db.semanticFacts.map(fact => {
+      const factTokens = tokenize(fact.text);
+      const intersection = queryTokens.filter(t => factTokens.includes(t));
+      const union = Array.from(new Set([...queryTokens, ...factTokens]));
+      const score = union.length > 0 ? intersection.length / union.length : 0;
+      return { fact: fact.text, score };
+    });
+
+    return scoredFacts
+      .filter(f => f.score > 0.05)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, topN)
+      .map(f => f.fact);
+  }
+
+  /**
+   * Automatically extract declaratives from conversational inputs
+   */
+  autoExtractSemanticFacts(userMessage) {
+    const text = userMessage.trim();
+    
+    // Regular expression helpers for direct declarations
+    const patterns = [
+      { regex: /my\s+(\w+)\s+(?:is|name\s+is)\s+([^.]+)/i, format: (m) => `User's ${m[1]} is ${m[2].trim()}` },
+      { regex: /i\s+am\s+(?:a|an)?\s*([^.]+)/i, format: (m) => `User is ${m[1].trim()}` },
+      { regex: /i\s+(?:love|like|hate)\s+([^.]+)/i, format: (m) => `User preference: ${m[0].trim()}` },
+      { regex: /i\s+live\s+in\s+([^.]+)/i, format: (m) => `User lives in ${m[1].trim()}` }
+    ];
+
+    for (const p of patterns) {
+      const match = text.match(p.regex);
+      if (match && match[1]) {
+        const fact = p.format(match);
+        this.addSemanticFact(fact);
+        break;
+      }
+    }
   }
 }

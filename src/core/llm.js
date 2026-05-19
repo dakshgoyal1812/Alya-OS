@@ -361,7 +361,10 @@ export class LLMEngine {
     }));
 
     // Inject sentiment guidelines
-    const systemPromptText = this._getSystemPromptText() + "\n" + emotionalGuidelines;
+    let systemPromptText = this._getSystemPromptText() + "\n" + emotionalGuidelines;
+    if (options && options.recalledFacts && options.recalledFacts.length > 0) {
+      systemPromptText += "\n\n## RECALLED LONG-TERM MEMORY FACTS:\n" + options.recalledFacts.map(f => `- ${f}`).join("\n");
+    }
 
     let messages = [
       { role: "system", content: systemPromptText },
