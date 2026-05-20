@@ -2521,4 +2521,46 @@ html, body {
   }
 }
 
+/* Onboarding Banner Styles */
+.onboarding-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 550px;
+  width: 100%;
+  margin: 15px 0;
+  text-align: left;
+}
+.onboarding-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  transition: transform 0.2s, border-color 0.2s;
+  backdrop-filter: blur(8px);
+}
+.onboarding-step:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-500);
+}
+.onboarding-step span {
+  font-size: 1.3rem;
+  margin-top: 2px;
+}
+.onboarding-step strong {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--accent-300);
+  margin-bottom: 2px;
+}
+.onboarding-step p {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 
