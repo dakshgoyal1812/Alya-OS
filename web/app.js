@@ -929,6 +929,7 @@
 
   // Poll status every 10s
   setInterval(fetchStatus, 10000);
+  fetchStatus(); // Fetch immediately on page load
 
   // ============================================================
   // ✨ HOLOGRAM AVATAR STATE ENGINE
