@@ -56,6 +56,61 @@ function trimMessagesToFit(messages, maxTokens) {
   return [systemMsg, ...kept, userMsg];
 }
 
+/**
+ * Robust JSON extraction helper to capture text-leaked tool calls from Llama models.
+ * Counts braces to extract complete nested JSON blocks containing "tool" or "function".
+ * Supports fallback parsing for unquoted keys/trailing commas.
+ */
+function extractJSONBlock(text) {
+  if (!text) return null;
+  const startIdx = text.search(/\{\s*"(?:tool|function)"\s*:/) !== -1 ? 
+    text.search(/\{\s*"(?:tool|function)"\s*:/) : 
+    text.search(/\{\s*(?:tool|function)\s*:/);
+  
+  if (startIdx === -1) return null;
+
+  let braceCount = 0;
+  let endIdx = -1;
+  for (let i = startIdx; i < text.length; i++) {
+    if (text[i] === '{') braceCount++;
+    else if (text[i] === '}') {
+      braceCount--;
+      if (braceCount === 0) {
+        endIdx = i;
+        break;
+      }
+    }
+  }
+
+  if (endIdx === -1) return null;
+
+  const jsonStr = text.substring(startIdx, endIdx + 1);
+  try {
+    const parsed = JSON.parse(jsonStr);
+    const toolName = parsed.tool || parsed.function;
+    if (toolName) {
+      return {
+        fullMatch: jsonStr,
+        tool: toolName,
+        args: parsed.args || parsed.arguments || {}
+      };
+    }
+  } catch (e) {
+    try {
+      const parsed = new Function(`return ${jsonStr}`)();
+      const toolName = parsed.tool || parsed.function;
+      if (toolName) {
+        return {
+          fullMatch: jsonStr,
+          tool: toolName,
+          args: parsed.args || parsed.arguments || {}
+        };
+      }
+    } catch (e2) {}
+  }
+  return null;
+}
+
 export class LLMEngine {
   constructor() {
     const config = loadConfig();
@@ -240,15 +295,11 @@ export class LLMEngine {
          return await this._processChat(messages, depth + 1);
       }
 
-      // Handle Markdown JSON tool leaks
-      const jsonToolMatch = rawContent.match(/```(?:json)?\s*(\{[\s\S]*?"tool"\s*:\s*"([^"]+)"[\s\S]*?\})\s*```/) || rawContent.match(/^(\{[\s\S]*?"tool"\s*:\s*"([^"]+)"[\s\S]*?\})$/m);
-      if (jsonToolMatch) {
-         const toolName = jsonToolMatch[2].trim();
-         let args = {};
-         try { 
-           args = JSON.parse(jsonToolMatch[1]); 
-           delete args.tool; // Remove the tool key since we only pass args
-         } catch(e) {}
+      // Handle Markdown JSON/JS tool leaks (unquoted keys, missing braces, trailing commas)
+      const leakedTool = extractJSONBlock(rawContent);
+      if (leakedTool) {
+         const toolName = leakedTool.tool.trim();
+         const args = leakedTool.args;
          messages.push(msg);
          const result = await executeTool(toolName, args);
          messages.push({ role: "user", content: `[System Tool Result: ${result}]\nNow finish your answer.` });

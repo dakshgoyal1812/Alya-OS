@@ -1034,6 +1034,24 @@
     </main>
   </div>
 
+  <!-- WhatsApp QR Code Modal -->
+  <div id="qr-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>📱 Link WhatsApp Bridge</h3>
+        <button class="modal-close" id="btn-close-qr">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Scan this QR code with WhatsApp on your phone to link Alya.</p>
+        <div class="qr-container">
+          <img id="qr-image" src="" alt="WhatsApp QR Code" style="display: none;" />
+          <div id="qr-status" class="qr-status-msg">Initializing WhatsApp. Please wait...</div>
+        </div>
+        <p class="qr-note">Note: QR code will automatically load once ready. Scanning links Alya to your WhatsApp account.</p>
+      </div>
+    </div>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="app.js"></script>
 </body>

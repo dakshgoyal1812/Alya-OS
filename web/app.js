@@ -843,7 +843,12 @@
       bridgeList.innerHTML = "";
       for (const [name, info] of Object.entries(status.bridges)) {
         const item = document.createElement("div");
-        item.className = "bridge-item";
+        const isClickableWa = name === "whatsapp" && !info.connected;
+        item.className = `bridge-item ${isClickableWa ? "clickable" : ""}`;
+        if (isClickableWa) {
+          item.title = "Click to Link WhatsApp Bridge";
+          item.addEventListener("click", openWhatsAppQR);
+        }
         item.innerHTML = `
           <span class="bridge-icon">${bridgeIcons[name] || "🔗"}</span>
           <span class="bridge-name">${name.charAt(0).toUpperCase() + name.slice(1)}</span>
@@ -2580,6 +2585,67 @@
   // Poll system sparklines every 2.5s
   setInterval(pollSparklines, 2500);
   pollSparklines();
+
+  // --- WhatsApp QR Code Popup ---
+  let qrPollInterval = null;
+
+  function openWhatsAppQR() {
+    const modal = document.getElementById("qr-modal");
+    const qrImage = document.getElementById("qr-image");
+    const qrStatus = document.getElementById("qr-status");
+    
+    modal.style.display = "flex";
+    qrImage.style.display = "none";
+    qrStatus.style.display = "block";
+    qrStatus.textContent = "Requesting QR code from Alya bridge...";
+    
+    pollQR();
+    if (qrPollInterval) clearInterval(qrPollInterval);
+    qrPollInterval = setInterval(pollQR, 5000);
+  }
+
+  function closeWhatsAppQR() {
+    const modal = document.getElementById("qr-modal");
+    modal.style.display = "none";
+    if (qrPollInterval) {
+      clearInterval(qrPollInterval);
+      qrPollInterval = null;
+    }
+  }
+
+  document.getElementById("btn-close-qr").addEventListener("click", closeWhatsAppQR);
+
+  async function pollQR() {
+    const qrImage = document.getElementById("qr-image");
+    const qrStatus = document.getElementById("qr-status");
+    
+    try {
+      const statusRes = await fetch("/api/status");
+      const statusData = await statusRes.json();
+      const isConnected = statusData.bridges?.whatsapp?.connected;
+      
+      if (isConnected) {
+        qrStatus.textContent = "✅ WhatsApp Connected Successfully!";
+        qrImage.style.display = "none";
+        setTimeout(closeWhatsAppQR, 2000);
+        return;
+      }
+      
+      const qrRes = await fetch("/api/whatsapp/qr");
+      if (qrRes.status === 200) {
+        qrImage.src = `/api/whatsapp/qr?t=${Date.now()}`;
+        qrImage.style.display = "block";
+        qrStatus.style.display = "none";
+      } else {
+        const errData = await qrRes.json();
+        qrStatus.textContent = errData.error || "QR code initializing...";
+        qrImage.style.display = "none";
+      }
+    } catch (e) {
+      qrStatus.textContent = "Error loading QR. Retrying...";
+      qrImage.style.display = "none";
+    }
+  }
 
   // Start 3D loop
   drawDreamspace();
