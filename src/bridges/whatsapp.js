@@ -24,6 +24,12 @@ export class WhatsAppBridge {
   }
 
   async start() {
+    if (process.env.RENDER === "true" || process.env.RENDER === true) {
+      console.warn("⚠️ WhatsApp Bridge: Auto-disabled on Render to prevent Puppeteer memory exhaustion (OOM) and missing dependency crashes.");
+      this.isReady = false;
+      return false;
+    }
+
     try {
       this.client = new Client({
         authStrategy: new LocalAuth({ dataPath: join(__dirname, "..", "..", "data", "whatsapp-auth") }),

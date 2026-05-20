@@ -42,7 +42,7 @@
   const voiceCanvas = document.getElementById("voice-canvas");
 
   // --- Socket.IO ---
-  const socket = io();
+  const socket = io({ transports: ["websocket", "polling"] });
   let isStreaming = false;
   let streamDiv = null;
   let hasMessages = false;
@@ -824,95 +824,106 @@
   }
 
   // --- Fetch Bridge Status & Resources ---
-  async function fetchStatus() {
+  async function safeFetchJson(url) {
     try {
-      const [healthRes, statusRes, systemRes, remindersRes] = await Promise.all([
-        fetch("/api/health"),
-        fetch("/api/status"),
-        fetch("/api/system"),
-        fetch("/api/reminders"),
-      ]);
-      const health = await healthRes.json();
-      const status = await statusRes.json();
-      const system = await systemRes.json();
-      const remindersData = await remindersRes.json();
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch (e) {
+      console.warn(`[Alya OS] Failed fetching API endpoint: ${url}`);
+      return null;
+    }
+  }
 
+  async function fetchStatus() {
+    // 1. Fetch Health Data
+    const health = await safeFetchJson("/api/health");
+    if (health) {
       // Update Groq API status
       const groqEl = document.getElementById("status-groq");
-      const dotEl = groqEl.querySelector(".status-dot");
-      const valEl = groqEl.querySelector(".status-value");
-      dotEl.className = `status-dot ${health.groqApi ? "online" : "offline"}`;
-      valEl.textContent = health.groqApi ? "Connected" : "Offline";
+      if (groqEl) {
+        const dotEl = groqEl.querySelector(".status-dot");
+        const valEl = groqEl.querySelector(".status-value");
+        if (dotEl) dotEl.className = `status-dot ${health.groqApi ? "online" : "offline"}`;
+        if (valEl) valEl.textContent = health.groqApi ? "Connected" : "Offline";
+      }
 
       // Update model
       const modelEl = document.getElementById("status-model");
-      const modelDot = modelEl.querySelector(".status-dot");
-      const modelVal = modelEl.querySelector(".status-value");
-      modelDot.className = `status-dot ${health.groqApi ? "online" : "offline"}`;
-      modelVal.textContent = health.model || "—";
+      if (modelEl) {
+        const modelDot = modelEl.querySelector(".status-dot");
+        const modelVal = modelEl.querySelector(".status-value");
+        if (modelDot) modelDot.className = `status-dot ${health.groqApi ? "online" : "offline"}`;
+        if (modelVal) modelVal.textContent = health.model || "—";
+      }
+    }
 
-      // Update bridges
+    // 2. Fetch Bridge Statuses
+    const status = await safeFetchJson("/api/status");
+    if (status && status.bridges) {
       const bridgeIcons = {
         discord: "💬", telegram: "✈️", slack: "💼", whatsapp: "📱", web: "🌐",
       };
-      bridgeList.innerHTML = "";
-      for (const [name, info] of Object.entries(status.bridges)) {
-        const item = document.createElement("div");
-        const isClickableWa = name === "whatsapp" && !info.connected;
-        item.className = `bridge-item ${isClickableWa ? "clickable" : ""}`;
-        if (isClickableWa) {
-          item.title = "Click to Link WhatsApp Bridge";
-          item.addEventListener("click", openWhatsAppQR);
-        }
-        item.innerHTML = `
-          <span class="bridge-icon">${bridgeIcons[name] || "🔗"}</span>
-          <span class="bridge-name">${name.charAt(0).toUpperCase() + name.slice(1)}</span>
-          <span class="bridge-status ${info.connected ? "online" : "offline"}">${info.connected ? "Live" : "Off"}</span>`;
-        bridgeList.appendChild(item);
-      }
-
-      // Update System resources
-      if (system) {
-        const cpuCoresEl = document.getElementById("cpu-cores");
-        const systemOsEl = document.getElementById("system-os");
-        const ramUsedEl = document.getElementById("ram-used");
-        const ramTotalEl = document.getElementById("ram-total");
-        const ramPercentEl = document.getElementById("ram-percent");
-        const ramProgress = document.getElementById("ram-progress");
-
-        if (cpuCoresEl) cpuCoresEl.textContent = system.cpuCores || "-";
-        if (systemOsEl) systemOsEl.textContent = (system.platform === "win32" ? "Windows" : system.platform) || "-";
-        if (ramUsedEl) ramUsedEl.textContent = system.usedRAM || "0 GB";
-        if (ramTotalEl) ramTotalEl.textContent = system.totalRAM || "0 GB";
-        
-        const ramPercent = system.ramPercent || 0;
-        if (ramPercentEl) ramPercentEl.textContent = `${ramPercent}%`;
-        if (ramProgress) {
-          ramProgress.setAttribute("stroke-dasharray", `${ramPercent}, 100`);
+      if (bridgeList) {
+        bridgeList.innerHTML = "";
+        for (const [name, info] of Object.entries(status.bridges)) {
+          const item = document.createElement("div");
+          const isClickableWa = name === "whatsapp" && !info.connected;
+          item.className = `bridge-item ${isClickableWa ? "clickable" : ""}`;
+          if (isClickableWa) {
+            item.title = "Click to Link WhatsApp Bridge";
+            item.addEventListener("click", openWhatsAppQR);
+          }
+          item.innerHTML = `
+            <span class="bridge-icon">${bridgeIcons[name] || "🔗"}</span>
+            <span class="bridge-name">${name.charAt(0).toUpperCase() + name.slice(1)}</span>
+            <span class="bridge-status ${info.connected ? "online" : "offline"}">${info.connected ? "Live" : "Off"}</span>`;
+          bridgeList.appendChild(item);
         }
       }
+    }
 
-      // Update Reminders list
-      const remindersList = document.getElementById("reminders-list");
-      if (remindersList && remindersData && remindersData.reminders) {
-        if (remindersData.reminders.length === 0) {
-          remindersList.innerHTML = `<li class="reminder-empty">No active reminders</li>`;
-        } else {
-          remindersList.innerHTML = remindersData.reminders.map(rem => {
-            const dateStr = rem.date ? new Date(rem.date).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
-            const timeStr = rem.time || '';
-            const schedStr = [dateStr, timeStr].filter(Boolean).join(' at ');
-            return `
-              <li class="reminder-item">
-                <span class="reminder-text">${rem.text || rem.reminder}</span>
-                <span class="reminder-time">⏰ ${schedStr || 'Scheduled'}</span>
-              </li>
-            `;
-          }).join("");
-        }
+    // 3. Fetch System Resource Gauges
+    const system = await safeFetchJson("/api/system");
+    if (system) {
+      const cpuCoresEl = document.getElementById("cpu-cores");
+      const systemOsEl = document.getElementById("system-os");
+      const ramUsedEl = document.getElementById("ram-used");
+      const ramTotalEl = document.getElementById("ram-total");
+      const ramPercentEl = document.getElementById("ram-percent");
+      const ramProgress = document.getElementById("ram-progress");
+
+      if (cpuCoresEl) cpuCoresEl.textContent = system.cpuCores || "-";
+      if (systemOsEl) systemOsEl.textContent = (system.platform === "win32" ? "Windows" : system.platform) || "-";
+      if (ramUsedEl) ramUsedEl.textContent = system.usedRAM || "0 GB";
+      if (ramTotalEl) ramTotalEl.textContent = system.totalRAM || "0 GB";
+      
+      const ramPercent = system.ramPercent || 0;
+      if (ramPercentEl) ramPercentEl.textContent = `${ramPercent}%`;
+      if (ramProgress) {
+        ramProgress.setAttribute("stroke-dasharray", `${ramPercent}, 100`);
       }
-    } catch {
-      // Status fetch failed
+    }
+
+    // 4. Fetch Reminders List
+    const remindersData = await safeFetchJson("/api/reminders");
+    const remindersList = document.getElementById("reminders-list");
+    if (remindersList && remindersData && remindersData.reminders) {
+      if (remindersData.reminders.length === 0) {
+        remindersList.innerHTML = `<li class="reminder-empty">No active reminders</li>`;
+      } else {
+        remindersList.innerHTML = remindersData.reminders.map(rem => {
+          const dateStr = rem.date ? new Date(rem.date).toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
+          const timeStr = rem.time || '';
+          const schedStr = [dateStr, timeStr].filter(Boolean).join(' at ');
+          return `
+            <li class="reminder-item">
+              <span class="reminder-text">${rem.text || rem.reminder}</span>
+              <span class="reminder-time">⏰ ${schedStr || 'Scheduled'}</span>
+            </li>
+          `;
+        }).join("");
+      }
     }
   }
 
