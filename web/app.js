@@ -2700,7 +2700,7 @@
 
   // Code Sandbox Playground
   const btnRunSandbox = document.getElementById("btn-run-sandbox");
-  const sandboxCode = document.getElementById("sandbox-code");
+  // sandboxCode is already declared above
   const sandboxPreviewFrame = document.getElementById("sandbox-preview-frame");
 
   // Life OS elements
