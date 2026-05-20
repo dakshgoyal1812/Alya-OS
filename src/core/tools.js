@@ -11,9 +11,38 @@ import { execSync } from "child_process";
 
 const MEMORY_FILE = path.join(process.cwd(), "data", "long_term_memory.json");
 const BACKUP_DIR = path.join(process.cwd(), "data", "backups");
+const LIFE_OS_FILE = path.join(process.cwd(), "data", "life_os.json");
+
 if (!fs.existsSync(path.join(process.cwd(), "data"))) fs.mkdirSync(path.join(process.cwd(), "data"), { recursive: true });
 if (!fs.existsSync(MEMORY_FILE)) fs.writeFileSync(MEMORY_FILE, JSON.stringify([]));
 if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+
+if (!fs.existsSync(LIFE_OS_FILE)) {
+  fs.writeFileSync(LIFE_OS_FILE, JSON.stringify({
+    tasks: [],
+    goals: [],
+    notes: "",
+    xp: 0,
+    level: 1,
+    streak: 1,
+    lastStreakUpdate: ""
+  }, null, 2));
+}
+
+export function getLifeOS() {
+  try {
+    if (fs.existsSync(LIFE_OS_FILE)) {
+      return JSON.parse(fs.readFileSync(LIFE_OS_FILE, "utf-8"));
+    }
+  } catch (e) {}
+  return { tasks: [], goals: [], notes: "", xp: 0, level: 1, streak: 1, lastStreakUpdate: "" };
+}
+
+export function saveLifeOS(data) {
+  try {
+    fs.writeFileSync(LIFE_OS_FILE, JSON.stringify(data, null, 2), "utf-8");
+  } catch (e) {}
+}
 
 // Define the tools Alya can use (SAFE tools only — no file system access)
 export const availableTools = [
@@ -523,6 +552,26 @@ export const availableTools = [
           code: { type: "string", description: "The JavaScript code to execute. Standard console.log is captured." }
         },
         required: ["code"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "manage_life_os",
+      description: "Manage the user's Life OS tasks, goals, notes, experience points (XP), intelligence level, and habits. Saves to persistent server memory.",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", enum: ["get", "update_notes", "add_task", "complete_task", "delete_task", "add_goal", "delete_goal", "add_xp"], description: "The action to perform." },
+          notes: { type: "string", description: "The new notes content (for update_notes action)." },
+          taskText: { type: "string", description: "The text of the task to add (for add_task)." },
+          taskId: { type: "string", description: "The ID of the task to complete or delete." },
+          goalText: { type: "string", description: "The text of the goal to add (for add_goal)." },
+          goalId: { type: "string", description: "The ID of the goal to delete." },
+          xpAmount: { type: "integer", description: "The amount of XP to add (for add_xp)." }
+        },
+        required: ["action"]
       }
     }
   }
@@ -1177,6 +1226,88 @@ export async function executeTool(name, args) {
           return logs.length > 0 ? logs.join("\n") : "Code executed successfully with no output.";
         } catch (err) {
           return `Sandbox Execution Error: ${err.message}`;
+        }
+      }
+
+      case "manage_life_os": {
+        try {
+          const action = args.action;
+          const data = getLifeOS();
+          
+          if (action === "get") {
+            return JSON.stringify(data, null, 2);
+          }
+          
+          if (action === "update_notes") {
+            data.notes = args.notes || "";
+            saveLifeOS(data);
+            return "Notes successfully updated in Second Brain.";
+          }
+          
+          if (action === "add_task") {
+            const newTask = {
+              id: Date.now().toString(),
+              text: args.taskText || "Untitled Task",
+              completed: false,
+              createdAt: new Date().toISOString()
+            };
+            data.tasks.push(newTask);
+            saveLifeOS(data);
+            return `Task added: "${newTask.text}" (ID: ${newTask.id})`;
+          }
+          
+          if (action === "complete_task") {
+            const task = data.tasks.find(t => t.id === args.taskId);
+            if (task) {
+              task.completed = true;
+              data.xp += 10;
+              if (data.xp >= data.level * 200) {
+                data.xp -= data.level * 200;
+                data.level += 1;
+              }
+              saveLifeOS(data);
+              return `Task completed: "${task.text}". Earned 10 XP. Current level: ${data.level}.`;
+            }
+            return "Task not found.";
+          }
+          
+          if (action === "delete_task") {
+            data.tasks = data.tasks.filter(t => t.id !== args.taskId);
+            saveLifeOS(data);
+            return "Task successfully deleted.";
+          }
+          
+          if (action === "add_goal") {
+            const newGoal = {
+              id: Date.now().toString(),
+              text: args.goalText || "Untitled Goal",
+              createdAt: new Date().toISOString()
+            };
+            data.goals.push(newGoal);
+            saveLifeOS(data);
+            return `Goal added: "${newGoal.text}" (ID: ${newGoal.id})`;
+          }
+          
+          if (action === "delete_goal") {
+            data.goals = data.goals.filter(g => g.id !== args.goalId);
+            saveLifeOS(data);
+            return "Goal successfully deleted.";
+          }
+          
+          if (action === "add_xp") {
+            const amount = args.xpAmount || 0;
+            data.xp += amount;
+            while (data.xp >= data.level * 200) {
+              data.xp -= data.level * 200;
+              data.level += 1;
+            }
+            saveLifeOS(data);
+            return `Added ${amount} XP. Current Level: ${data.level} (${data.xp} XP)`;
+          }
+          
+          return "Invalid action.";
+        } catch (e) {
+          return `Life OS tool failure: ${e.message}`;
         }
       }
 

@@ -7,6 +7,8 @@ import { getSystemPrompt, getErrorMessage } from "./personality.js";
 import { loadConfig } from "./config.js";
 import { availableTools, executeTool } from "./tools.js";
 import OpenAI from "openai";
+import fs from "fs";
+import { join } from "path";
 
 // Import Advanced AI features
 import { ModelRouter, MODEL_DIRECTORY } from "./router.js";
@@ -216,6 +218,29 @@ export class LLMEngine {
 
   _getSystemPromptText() {
     let promptText = getSystemPrompt(this.mood || "normal");
+    
+    // Inject Second Brain (Life OS) memory context dynamically
+    try {
+      const file = join(process.cwd(), "data", "life_os.json");
+      if (fs.existsSync(file)) {
+        const data = JSON.parse(fs.readFileSync(file, "utf-8"));
+        const openTasks = data.tasks.filter(t => !t.completed).map(t => `- ${t.text}`).join("\n");
+        const openGoals = data.goals.map(g => `- ${g.text}`).join("\n");
+        
+        promptText += `\n\n## USER'S SECOND BRAIN & LIFE OS CONTEXT:
+Active Goals:
+${openGoals || "None"}
+
+Pending Tasks:
+${openTasks || "None"}
+
+Personal Notes:
+${data.notes || "None"}
+
+User Level: ${data.level} (Streak: ${data.streak} Days)`;
+      }
+    } catch (e) {}
+
     if (this.customLore) {
       promptText += `\n\n## CUSTOM USER PERSONALITY LORE:\n${this.customLore}`;
     }

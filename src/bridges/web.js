@@ -158,6 +158,66 @@ export class WebBridge {
         res.status(500).json({ error: err.message });
       }
     });
+
+    // API: Get Life OS State
+    this.app.get("/api/life-os", (req, res) => {
+      try {
+        const file = join(process.cwd(), "data", "life_os.json");
+        let data = { tasks: [], goals: [], notes: "", xp: 0, level: 1, streak: 1, lastStreakUpdate: "" };
+        if (fs.existsSync(file)) {
+          data = JSON.parse(fs.readFileSync(file, "utf-8"));
+        }
+        res.json(data);
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    // API: Update Life OS State
+    this.app.post("/api/life-os/update", (req, res) => {
+      try {
+        const file = join(process.cwd(), "data", "life_os.json");
+        const data = req.body;
+        
+        // Ensure data directory exists
+        const dir = join(process.cwd(), "data");
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        
+        fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf-8");
+        res.json({ success: true });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+    // API: Generate AI Daily Summary & Schedule Optimization
+    this.app.post("/api/life-os/summary", async (req, res) => {
+      try {
+        const file = join(process.cwd(), "data", "life_os.json");
+        let data = { tasks: [], goals: [], notes: "", xp: 0, level: 1, streak: 1, lastStreakUpdate: "" };
+        if (fs.existsSync(file)) {
+          data = JSON.parse(fs.readFileSync(file, "utf-8"));
+        }
+        
+        const openTasks = data.tasks.filter(t => !t.completed).map(t => t.text).join(", ");
+        const openGoals = data.goals.map(g => g.text).join(", ");
+        
+        const prompt = `You are Alya's Brain Core. The user wants an AI Daily Summary and Schedule Optimization. 
+Here is their current state:
+Level: ${data.level} (XP: ${data.xp}/200)
+Pending Tasks: ${openTasks || "None"}
+Active Goals: ${openGoals || "None"}
+Personal Notes: ${data.notes || "None"}
+
+Please generate a motivating daily summary, highlighting priorities and providing a 3-step action plan to optimize their productivity today. Keep it short, actionable, and conversational.`;
+        
+        const summary = await this.llm.generate(prompt);
+        res.json({ summary });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
+    });
+
     // API: Get all workflows
     this.app.get("/api/workflows", (req, res) => {
       res.json({ workflows: this.automation.getWorkflows() });

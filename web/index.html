@@ -177,6 +177,20 @@
         </div>
 
         <div class="header-controls">
+          <!-- Agent Persona / App Selector -->
+          <div class="control-select-group">
+            <label for="select-persona">📱 App Agent:</label>
+            <select id="select-persona" class="header-select">
+              <option value="normal">Default Alya</option>
+              <option value="coding">💻 Coding Agent</option>
+              <option value="research">🔍 Research Agent</option>
+              <option value="study">📚 Study Agent</option>
+              <option value="youtube">🎥 YouTube Script</option>
+              <option value="instagram">🤳 Insta Creator</option>
+              <option value="resume">📄 Talent Resume</option>
+              <option value="roast">🔥 Roast Mode</option>
+            </select>
+          </div>
           <!-- Cognitive State Selector -->
           <div class="control-select-group">
             <label for="select-cognitive-state">🧠 Mode:</label>
@@ -198,20 +212,23 @@
               <option value="tree">Tree of Thought</option>
             </select>
           </div>
-          <!-- Router Mode Selector -->
-          <div class="control-select-group">
-            <label for="select-routing">⚡ Route:</label>
-            <select id="select-routing" class="header-select">
-              <option value="intelligence">Max IQ</option>
-              <option value="speed">Max Speed</option>
-              <option value="cost">Cost Opt</option>
-            </select>
-          </div>
           <!-- Swarm Mode Checkbox -->
           <div class="control-checkbox-group">
             <input type="checkbox" id="check-swarm">
             <label for="check-swarm">🐝 Swarm</label>
           </div>
+          <!-- Eco Mode Checkbox -->
+          <div class="control-checkbox-group">
+            <input type="checkbox" id="check-eco">
+            <label for="check-eco">🍃 Eco</label>
+          </div>
+          <!-- Interactive Workspace & Orb triggers -->
+          <button class="btn-primary" id="btn-toggle-workspace" style="padding: 4px 10px; font-size: 0.72rem; display: flex; align-items: center; gap: 4px;" title="Toggle Split-Screen Workspace Mode">
+            🖥️ Workspace
+          </button>
+          <button class="btn-secondary" id="btn-trigger-orb" style="padding: 4px 10px; font-size: 0.72rem; display: flex; align-items: center; gap: 4px; border: 1px solid var(--accent-500); background: rgba(6, 182, 212, 0.15); color: var(--accent-300);" title="Open Voice Orb Assistant">
+            🎙️ Orb
+          </button>
         </div>
       </div>
 
@@ -219,42 +236,134 @@
       <div class="tab-content">
         <!-- PANE 1: Chat Workspace -->
         <div id="chat-pane" class="tab-pane active">
-          <!-- Hologram Avatar Visualizer -->
-          <div class="hologram-container">
-            <div class="hologram-avatar" id="hologram-avatar">
-              <div class="hologram-ring ring1"></div>
-              <div class="hologram-ring ring2"></div>
-              <div class="hologram-ring ring3"></div>
-              <div class="hologram-core"></div>
-              <svg class="hologram-face" viewBox="0 0 100 100">
-                <circle cx="35" cy="45" r="5" fill="#06b6d4" id="eye-left" />
-                <circle cx="65" cy="45" r="5" fill="#06b6d4" id="eye-right" />
-                <path d="M 35 65 Q 50 65 65 65" stroke="#06b6d4" stroke-width="4" stroke-linecap="round" fill="none" id="mouth-line" />
-              </svg>
-            </div>
-            <div class="hologram-status-text" id="hologram-status">System AI: Idle</div>
-          </div>
+          <div class="workspace-wrapper" id="workspace-wrapper">
+            <!-- Left Side: Chat Panel -->
+            <div class="workspace-chat">
+              <!-- Hologram Avatar Visualizer -->
+              <div class="hologram-container">
+                <div class="hologram-avatar" id="hologram-avatar">
+                  <div class="hologram-ring ring1"></div>
+                  <div class="hologram-ring ring2"></div>
+                  <div class="hologram-ring ring3"></div>
+                  <div class="hologram-core"></div>
+                  <svg class="hologram-face" viewBox="0 0 100 100">
+                    <circle cx="35" cy="45" r="5" fill="#06b6d4" id="eye-left" />
+                    <circle cx="65" cy="45" r="5" fill="#06b6d4" id="eye-right" />
+                    <path d="M 35 65 Q 50 65 65 65" stroke="#06b6d4" stroke-width="4" stroke-linecap="round" fill="none" id="mouth-line" />
+                  </svg>
+                </div>
+                <div class="hologram-status-text" id="hologram-status">System AI: Idle</div>
+              </div>
 
-          <div class="messages-container" id="messages">
-            <!-- Welcome screen -->
-            <div class="welcome-screen" id="welcome-screen">
-              <div class="welcome-icon">✨</div>
-              <h2>Hey. I'm Alya.</h2>
-              <p>Your private AI assistant, running right here on your device.</p>
-              <p class="welcome-hint">Type a message or tap the mic to start talking.</p>
-              <div class="feature-chips">
-                <button class="chip" data-prompt="Alya, check my computer's RAM, cores and OS info.">💻 System specs</button>
-                <button class="chip" data-prompt="Alya, check the weather in New Delhi.">🌤️ Check Weather</button>
-                <button class="chip" data-prompt="Alya, take a screenshot of https://news.ycombinator.com">📸 Screenshot site</button>
-                <button class="chip" data-prompt="Alya, check the current price of Bitcoin.">🪙 Bitcoin price</button>
-                <button class="chip" data-prompt="Alya, generate an image of a futuristic floating island.">🎨 Generate image</button>
-                <button class="chip" data-prompt="Alya, what do you remember about me?">🧠 Recall memories</button>
-                <button class="chip" data-prompt="Alya, scan my storage logical drives space.">💾 Storage space</button>
-                <button class="chip" data-prompt="Alya, generate a QR Code for https://google.com">🔗 Make QR Code</button>
-                <button class="chip" data-prompt="Alya, add a reminder to water the plants tomorrow at 9am.">⏰ Set reminder</button>
-                <button class="chip" data-prompt="Alya, summarize this YouTube video: https://www.youtube.com/watch?v=jNQXAC9IVRw">🎥 YouTube summary</button>
-                <button class="chip" data-prompt="Alya, run a system backup.">📦 System Backup</button>
-                <button class="chip" data-prompt="Alya, execute python code to print the first 10 Fibonacci numbers.">🐍 Python Sandbox</button>
+              <div class="messages-container" id="messages">
+                <!-- Welcome screen -->
+                <div class="welcome-screen" id="welcome-screen">
+                  <div class="welcome-icon">✨</div>
+                  <h2>Hey. I'm Alya.</h2>
+                  <p>Your private AI assistant, running right here on your device.</p>
+                  <p class="welcome-hint">Type a message or tap the mic to start talking.</p>
+                  <div class="feature-chips">
+                    <button class="chip" data-prompt="Alya, check my computer's RAM, cores and OS info.">💻 System specs</button>
+                    <button class="chip" data-prompt="Alya, check the weather in New Delhi.">🌤️ Check Weather</button>
+                    <button class="chip" data-prompt="Alya, take a screenshot of https://news.ycombinator.com">📸 Screenshot site</button>
+                    <button class="chip" data-prompt="Alya, check the current price of Bitcoin.">🪙 Bitcoin price</button>
+                    <button class="chip" data-prompt="Alya, generate an image of a futuristic floating island.">🎨 Generate image</button>
+                    <button class="chip" data-prompt="Alya, what do you remember about me?">🧠 Recall memories</button>
+                    <button class="chip" data-prompt="Alya, scan my storage logical drives space.">💾 Storage space</button>
+                    <button class="chip" data-prompt="Alya, generate a QR Code for https://google.com">🔗 Make QR Code</button>
+                    <button class="chip" data-prompt="Alya, add a reminder to water the plants tomorrow at 9am.">⏰ Set reminder</button>
+                    <button class="chip" data-prompt="Alya, summarize this YouTube video: https://www.youtube.com/watch?v=jNQXAC9IVRw">🎥 YouTube summary</button>
+                    <button class="chip" data-prompt="Alya, run a system backup.">📦 System Backup</button>
+                    <button class="chip" data-prompt="Alya, execute python code to print the first 10 Fibonacci numbers.">🐍 Python Sandbox</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Side: Notion/Sandbox Panel (Hidden by default, shown in workspace mode) -->
+            <div class="workspace-right-panel" id="workspace-right-panel" style="display: none;">
+              <!-- Tabs for Workspace tools -->
+              <div class="workspace-tabs">
+                <button class="w-tab-btn active" data-wtab="w-notes">📝 Notes</button>
+                <button class="w-tab-btn" data-wtab="w-sandbox">💻 Sandbox Compiler</button>
+                <button class="w-tab-btn" data-wtab="w-tasks">📋 Life OS Planner</button>
+                <button class="w-tab-btn" data-wtab="w-browser">🌐 AI Browser</button>
+              </div>
+              
+              <!-- Tab contents -->
+              <div class="workspace-tab-content">
+                <!-- Notes tab -->
+                <div id="w-notes" class="w-tab-pane active">
+                  <textarea id="workspace-notes" placeholder="Start typing your notes here Master... Alya will auto-save everything to your Second Brain."></textarea>
+                  <div class="notes-status" id="notes-status">Notes saved locally</div>
+                </div>
+                
+                <!-- Sandbox tab -->
+                <div id="w-sandbox" class="w-tab-pane">
+                  <div class="sandbox-header">
+                    <span>HTML/CSS/JS Playground</span>
+                    <button class="btn-primary" id="btn-run-sandbox" style="padding: 2px 8px; font-size: 11px;">Run Code</button>
+                  </div>
+                  <textarea id="sandbox-code" placeholder="<!-- Write your HTML/CSS/JS code here Master -->&#10;<h1>Hello Master!</h1>&#10;<p>Alya has generated this for you.</p>"></textarea>
+                  <div class="sandbox-preview-container">
+                    <iframe id="sandbox-preview-frame" sandbox="allow-scripts"></iframe>
+                  </div>
+                </div>
+                
+                <!-- Tasks tab -->
+                <div id="w-tasks" class="w-tab-pane">
+                  <!-- Stats card -->
+                  <div class="tasks-stats-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                      <span>Level: <strong id="lifeos-level">1</strong></span>
+                      <span>XP: <strong id="lifeos-xp">0/200</strong></span>
+                      <span>Streak: <strong id="lifeos-streak" style="color: #f59e0b;">1 Day 🔥</strong></span>
+                    </div>
+                    <div class="progress-bar" style="margin-top: 5px;"><div id="lifeos-xp-fill" class="progress-fill" style="width: 0%;"></div></div>
+                  </div>
+                  
+                  <!-- Daily summary generated by Alya -->
+                  <div class="ai-daily-summary-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                      <h5>✨ AI Daily Summary & Optimize</h5>
+                      <button class="btn-secondary" id="btn-gen-daily-summary" style="padding: 2px 6px; font-size: 9px; border-color: rgba(6,182,212,0.3);">Regen</button>
+                    </div>
+                    <div id="ai-daily-summary-text" class="ai-daily-summary-text">Click generate to receive priority optimization tips based on your Second Brain.</div>
+                  </div>
+
+                  <!-- Goals & Tasks flex columns -->
+                  <div class="lifeos-columns">
+                    <div class="lifeos-col">
+                      <h5>🎯 Active Goals</h5>
+                      <div class="lifeos-add-input">
+                        <input type="text" id="input-new-goal" placeholder="e.g. Master React this month..." />
+                        <button id="btn-add-goal">+</button>
+                      </div>
+                      <ul id="lifeos-goals-list" class="lifeos-list">
+                        <!-- Goals dynamic insertion -->
+                      </ul>
+                    </div>
+                    <div class="lifeos-col">
+                      <h5>📋 Task Checklist</h5>
+                      <div class="lifeos-add-input">
+                        <input type="text" id="input-new-task" placeholder="e.g. Finish chemistry project..." />
+                        <button id="btn-add-task">+</button>
+                      </div>
+                      <ul id="lifeos-tasks-list" class="lifeos-list">
+                        <!-- Tasks dynamic insertion -->
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- AI Browser tab -->
+                <div id="w-browser" class="w-tab-pane">
+                  <div class="browser-header">
+                    <input type="text" id="browser-url" placeholder="Enter URL (e.g. https://example.com) to read content..." style="flex:1;" />
+                    <button class="btn-primary" id="btn-browser-read" style="padding: 4px 10px; font-size: 11px;">Scrape & Summarize</button>
+                  </div>
+                  <div id="browser-output" class="browser-output-console">URL content and summaries will appear here after loading...</div>
+                </div>
               </div>
             </div>
           </div>
@@ -1049,6 +1158,23 @@
         </div>
         <p class="qr-note">Note: QR code will automatically load once ready. Scanning links Alya to your WhatsApp account.</p>
       </div>
+    </div>
+  </div>
+
+  <!-- Full-Screen Jarvis Voice Orb Overlay -->
+  <div id="orb-overlay" class="orb-overlay" style="display: none;">
+    <button class="orb-close" id="btn-close-orb">&times;</button>
+    <div class="orb-container">
+      <div class="orb-visualizer-glow"></div>
+      <div class="orb-glow-pulse"></div>
+      <div class="orb-core">
+        <div class="orb-ring ring-fast"></div>
+        <div class="orb-ring ring-medium"></div>
+        <div class="orb-ring ring-slow"></div>
+        <div class="orb-center"></div>
+      </div>
+      <div class="orb-status" id="orb-status">Tap the Orb to Speak</div>
+      <div class="orb-transcription" id="orb-transcription">...</div>
     </div>
   </div>
 

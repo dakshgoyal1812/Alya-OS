@@ -121,9 +121,15 @@
     }
     
     currentAudio = new Audio(data.url);
+    if (typeof voiceOrbController !== "undefined" && voiceOrbController.active) {
+      voiceOrbController.setState("speaking", "Alya speaking...");
+    }
     currentAudio.play().catch(e => console.error("Audio playback failed:", e));
     
     currentAudio.onended = () => {
+      if (typeof voiceOrbController !== "undefined" && voiceOrbController.active) {
+        voiceOrbController.setState("idle");
+      }
       if (lastMessageWasVoice && !isListening) {
         startListening();
       }
@@ -798,7 +804,16 @@
       }
       if (voice) utterance.voice = voice;
 
+      utterance.onstart = () => {
+        if (typeof voiceOrbController !== "undefined" && voiceOrbController.active) {
+          voiceOrbController.setState("speaking", cleanText);
+        }
+      };
+
       utterance.onend = () => {
+        if (typeof voiceOrbController !== "undefined" && voiceOrbController.active) {
+          voiceOrbController.setState("idle");
+        }
         if (lastMessageWasVoice && !isListening) {
           startListening();
         }
@@ -2646,6 +2661,534 @@
       qrImage.style.display = "none";
     }
   }
+
+  // ============================================================
+  // 🖥️ ALYA OS WORKSPACE & LIFE OS SYSTEM
+  // ============================================================
+  let lifeOSState = {
+    tasks: [],
+    goals: [],
+    notes: "",
+    xp: 0,
+    level: 1,
+    streak: 1,
+    lastStreakUpdate: ""
+  };
+
+  const btnToggleWorkspace = document.getElementById("btn-toggle-workspace");
+  const workspaceRightPanel = document.getElementById("workspace-right-panel");
+  const workspaceNotes = document.getElementById("workspace-notes");
+  const notesStatus = document.getElementById("notes-status");
+  const selectPersona = document.getElementById("select-persona");
+  const checkEco = document.getElementById("check-eco");
+  
+  // Workspace Tab buttons and panes
+  const wTabButtons = document.querySelectorAll(".w-tab-btn");
+  const wTabPanes = document.querySelectorAll(".w-tab-pane");
+
+  // Code Sandbox Playground
+  const btnRunSandbox = document.getElementById("btn-run-sandbox");
+  const sandboxCode = document.getElementById("sandbox-code");
+  const sandboxPreviewFrame = document.getElementById("sandbox-preview-frame");
+
+  // Life OS elements
+  const lifeosLevel = document.getElementById("lifeos-level");
+  const lifeosXp = document.getElementById("lifeos-xp");
+  const lifeosStreak = document.getElementById("lifeos-streak");
+  const lifeosXpFill = document.getElementById("lifeos-xp-fill");
+  const btnGenDailySummary = document.getElementById("btn-gen-daily-summary");
+  const aiDailySummaryText = document.getElementById("ai-daily-summary-text");
+  
+  const inputNewGoal = document.getElementById("input-new-goal");
+  const btnAddGoal = document.getElementById("btn-add-goal");
+  const lifeosGoalsList = document.getElementById("lifeos-goals-list");
+  
+  const inputNewTask = document.getElementById("input-new-task");
+  const btnAddTask = document.getElementById("btn-add-task");
+  const lifeosTasksList = document.getElementById("lifeos-tasks-list");
+
+  // AI Browser elements
+  const browserUrl = document.getElementById("browser-url");
+  const btnBrowserRead = document.getElementById("btn-browser-read");
+  const browserOutput = document.getElementById("browser-output");
+
+  // Auto-detect mobile devices and turn on Eco Mode by default
+  const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768;
+  if (isMobileDevice && checkEco) {
+    checkEco.checked = true;
+    document.body.classList.add("eco-mode");
+    console.log("🍃 Eco Mode activated automatically on mobile/low-end device.");
+  }
+
+  // Toggling Eco Mode manually
+  if (checkEco) {
+    checkEco.addEventListener("change", (e) => {
+      if (e.target.checked) {
+        document.body.classList.add("eco-mode");
+      } else {
+        document.body.classList.remove("eco-mode");
+      }
+    });
+  }
+
+  // Persona switching
+  if (selectPersona) {
+    selectPersona.addEventListener("change", (e) => {
+      const mood = e.target.value;
+      socket.emit("set_mood", { mood });
+      
+      // Inject introduction bubble
+      const introMessages = {
+        normal: "Right away, Master! I am back to my gentle self. What can I do for you? ✨",
+        coding: "💻 Coding Agent initialized! Workspace compiler is synced and local JS sandbox is ready. Ask me to write, debug or analyze any code, Master!",
+        research: "🔍 Research Agent ready! I can scour the web, analyze documents, read video transcripts, and write reports for you.",
+        study: "📚 Study Mode active! Let's prep for exams, make study cards, run active recall quizzes, and memorize together. What subject are we studying today, Master?",
+        youtube: "🎥 YouTube Creator Engine loaded. Give me a topic and let's craft a viral hook, high-retention script, and tags!",
+        instagram: "🤳 Social Media Reels Studio initialized. Let's design viral hooks, captions, and script concepts to get you trending!",
+        resume: "📄 Executive Talent & Resume Mode. Let's optimize your career highlights, write strong cover letters, and prepare for interviews.",
+        roast: "🔥 ROAST MODE ENABLED. Main toh aapki intelligence test karne ke liye ready hoon, Master! Let's see what you've got."
+      };
+      
+      const content = introMessages[mood] || "App mode selected. How can I serve you, Master?";
+      
+      // Emit a message bubble locally to show Alya shifted
+      appendMessage("assistant", content, new Date().toISOString());
+      speak(content);
+    });
+  }
+
+  // Toggle Workspace mode
+  if (btnToggleWorkspace) {
+    btnToggleWorkspace.addEventListener("click", () => {
+      if (workspaceRightPanel.style.display === "none") {
+        workspaceRightPanel.style.display = "flex";
+        btnToggleWorkspace.classList.add("active");
+        btnToggleWorkspace.style.background = "var(--accent-500)";
+        loadLifeOS();
+      } else {
+        workspaceRightPanel.style.display = "none";
+        btnToggleWorkspace.classList.remove("active");
+        btnToggleWorkspace.style.background = "";
+      }
+    });
+  }
+
+  // Workspace Tab buttons
+  wTabButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      wTabButtons.forEach(b => b.classList.remove("active"));
+      wTabPanes.forEach(p => p.classList.remove("active"));
+      
+      btn.classList.add("active");
+      const tabId = btn.getAttribute("data-wtab");
+      document.getElementById(tabId).classList.add("active");
+    });
+  });
+
+  // Notes Auto-save with debouncing
+  let notesTimeout = null;
+  if (workspaceNotes) {
+    workspaceNotes.addEventListener("input", () => {
+      notesStatus.textContent = "Writing...";
+      if (notesTimeout) clearTimeout(notesTimeout);
+      notesTimeout = setTimeout(async () => {
+        lifeOSState.notes = workspaceNotes.value;
+        const success = await saveLifeOSState();
+        notesStatus.textContent = success ? "Saved to Second Brain" : "Save failed";
+      }, 1000);
+    });
+  }
+
+  // Sandbox Compiler
+  if (btnRunSandbox && sandboxCode && sandboxPreviewFrame) {
+    btnRunSandbox.addEventListener("click", () => {
+      const code = sandboxCode.value;
+      sandboxPreviewFrame.srcdoc = code;
+    });
+  }
+
+  // Web Browser url scrape handler
+  if (btnBrowserRead) {
+    btnBrowserRead.addEventListener("click", () => {
+      const url = browserUrl.value;
+      if (!url) return;
+      
+      browserOutput.textContent = `Requesting Alya to scrape and analyze: ${url}...`;
+      
+      // Redirect prompt into chat input
+      const msgInput = document.getElementById("message-input");
+      if (msgInput) {
+        msgInput.value = `Alya, please fetch, scrape, and summarize the contents of this website: ${url}`;
+        
+        // Show status message in the chat
+        appendMessage("user", `Alya, scrape and summarize: ${url}`);
+        
+        // Options
+        const options = {
+          routingMode: document.getElementById("select-routing")?.value || "intelligence",
+          thinkingMode: document.getElementById("select-thinking")?.value || "normal",
+          swarmMode: document.getElementById("check-swarm")?.checked || false,
+          cognitiveState: document.getElementById("select-cognitive-state")?.value || "focus"
+        };
+        
+        socket.emit("chat", { 
+          message: msgInput.value, 
+          options: options
+        });
+        
+        msgInput.value = "";
+        
+        // Go back to the conversation tab to see the live tool calling in action!
+        setTimeout(() => {
+          const chatTab = document.querySelector('[data-tab="chat-pane"]');
+          if (chatTab) chatTab.click();
+        }, 300);
+      }
+    });
+  }
+
+  // Fetch Life OS data
+  async function loadLifeOS() {
+    try {
+      const res = await fetch("/api/life-os");
+      if (res.status === 200) {
+        lifeOSState = await res.json();
+        renderLifeOS();
+      }
+    } catch (e) {
+      console.error("Error loading Life OS:", e);
+    }
+  }
+
+  // Save Life OS data
+  async function saveLifeOSState() {
+    try {
+      const res = await fetch("/api/life-os/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(lifeOSState)
+      });
+      return res.status === 200;
+    } catch (e) {
+      console.error("Error saving Life OS state:", e);
+      return false;
+    }
+  }
+
+  // Render Tasks, Goals, Stats to the UI
+  function renderLifeOS() {
+    // Level & XP
+    if (lifeosLevel) lifeosLevel.textContent = lifeOSState.level;
+    if (lifeosXp) lifeosXp.textContent = `${lifeOSState.xp}/${lifeOSState.level * 200}`;
+    if (lifeosStreak) lifeosStreak.textContent = `${lifeOSState.streak} Day${lifeOSState.streak > 1 ? 's' : ''} 🔥`;
+    
+    if (lifeosXpFill) {
+      const percentage = Math.min(100, (lifeOSState.xp / (lifeOSState.level * 200)) * 100);
+      lifeosXpFill.style.width = `${percentage}%`;
+    }
+
+    // Notes
+    if (workspaceNotes && document.activeElement !== workspaceNotes) {
+      workspaceNotes.value = lifeOSState.notes || "";
+    }
+
+    // Render Goals
+    if (lifeosGoalsList) {
+      lifeosGoalsList.innerHTML = "";
+      if (lifeOSState.goals.length === 0) {
+        lifeosGoalsList.innerHTML = `<li class="lifeos-item" style="color: var(--text-muted); justify-content: center;">No goals set</li>`;
+      } else {
+        lifeOSState.goals.forEach(goal => {
+          const li = document.createElement("li");
+          li.className = "lifeos-item";
+          li.innerHTML = `
+            <div class="lifeos-item-left">
+              <span>🎯 ${goal.text}</span>
+            </div>
+            <button class="delete-goal-btn" data-id="${goal.id}">&times;</button>
+          `;
+          lifeosGoalsList.appendChild(li);
+        });
+      }
+    }
+
+    // Render Tasks
+    if (lifeosTasksList) {
+      lifeosTasksList.innerHTML = "";
+      if (lifeOSState.tasks.length === 0) {
+        lifeosTasksList.innerHTML = `<li class="lifeos-item" style="color: var(--text-muted); justify-content: center;">No tasks scheduled</li>`;
+      } else {
+        lifeOSState.tasks.forEach(task => {
+          const li = document.createElement("li");
+          li.className = `lifeos-item ${task.completed ? 'completed' : ''}`;
+          li.innerHTML = `
+            <div class="lifeos-item-left">
+              <input type="checkbox" class="task-checkbox" data-id="${task.id}" ${task.completed ? 'checked' : ''} />
+              <span>${task.text}</span>
+            </div>
+            <button class="delete-task-btn" data-id="${task.id}">&times;</button>
+          `;
+          lifeosTasksList.appendChild(li);
+        });
+      }
+    }
+
+    // Rebind task list event listeners
+    document.querySelectorAll(".task-checkbox").forEach(chk => {
+      chk.addEventListener("change", async (e) => {
+        const id = e.target.getAttribute("data-id");
+        const isChecked = e.target.checked;
+        const task = lifeOSState.tasks.find(t => t.id === id);
+        
+        if (task) {
+          task.completed = isChecked;
+          if (isChecked) {
+            // Task complete, reward 10 XP
+            lifeOSState.xp += 10;
+            if (lifeOSState.xp >= lifeOSState.level * 200) {
+              lifeOSState.xp -= lifeOSState.level * 200;
+              lifeOSState.level += 1;
+              
+              // Trigger Level Up voice response
+              const msg = `Congratulations Master! You have leveled up to Level ${lifeOSState.level}! Your productivity is soaring! ✨`;
+              appendMessage("assistant", msg);
+              speak(msg);
+            }
+          }
+          await saveLifeOSState();
+          renderLifeOS();
+        }
+      });
+    });
+
+    document.querySelectorAll(".delete-task-btn").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const id = e.target.getAttribute("data-id");
+        lifeOSState.tasks = lifeOSState.tasks.filter(t => t.id !== id);
+        await saveLifeOSState();
+        renderLifeOS();
+      });
+    });
+
+    document.querySelectorAll(".delete-goal-btn").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        const id = e.target.getAttribute("data-id");
+        lifeOSState.goals = lifeOSState.goals.filter(g => g.id !== id);
+        await saveLifeOSState();
+        renderLifeOS();
+      });
+    });
+  }
+
+  // Add Goal click
+  if (btnAddGoal && inputNewGoal) {
+    btnAddGoal.addEventListener("click", async () => {
+      const text = inputNewGoal.value.trim();
+      if (!text) return;
+      
+      lifeOSState.goals.push({
+        id: Date.now().toString(),
+        text,
+        createdAt: new Date().toISOString()
+      });
+      inputNewGoal.value = "";
+      await saveLifeOSState();
+      renderLifeOS();
+    });
+    
+    inputNewGoal.addEventListener("keydown", async (e) => {
+      if (e.key === "Enter") {
+        btnAddGoal.click();
+      }
+    });
+  }
+
+  // Add Task click
+  if (btnAddTask && inputNewTask) {
+    btnAddTask.addEventListener("click", async () => {
+      const text = inputNewTask.value.trim();
+      if (!text) return;
+      
+      lifeOSState.tasks.push({
+        id: Date.now().toString(),
+        text,
+        completed: false,
+        createdAt: new Date().toISOString()
+      });
+      inputNewTask.value = "";
+      await saveLifeOSState();
+      renderLifeOS();
+    });
+    
+    inputNewTask.addEventListener("keydown", async (e) => {
+      if (e.key === "Enter") {
+        btnAddTask.click();
+      }
+    });
+  }
+
+  // Generate Daily Summary
+  if (btnGenDailySummary && aiDailySummaryText) {
+    btnGenDailySummary.addEventListener("click", async () => {
+      aiDailySummaryText.textContent = "Alya is analyzing your Second Brain memory files to optimize scheduling...";
+      try {
+        const res = await fetch("/api/life-os/summary", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        if (res.status === 200) {
+          const data = await res.json();
+          aiDailySummaryText.textContent = data.summary;
+        } else {
+          aiDailySummaryText.textContent = "Could not generate summary at this time.";
+        }
+      } catch (e) {
+        aiDailySummaryText.textContent = "Error communicating with AI engine.";
+      }
+    });
+  }
+
+  // ============================================================
+  // 🎙️ JARVIS VOICE ORB ASSISTANT
+  // ============================================================
+  const voiceOrbController = {
+    active: false,
+    state: "idle", // "idle", "listening", "thinking", "speaking"
+    recognition: null,
+    
+    init() {
+      const btnTriggerOrb = document.getElementById("btn-trigger-orb");
+      const btnCloseOrb = document.getElementById("btn-close-orb");
+      const orbOverlay = document.getElementById("orb-overlay");
+      const orbCore = document.querySelector(".orb-core");
+      
+      if (!btnTriggerOrb || !orbOverlay) return;
+      
+      btnTriggerOrb.addEventListener("click", () => {
+        orbOverlay.style.display = "flex";
+        this.active = true;
+        this.setState("idle");
+      });
+      
+      btnCloseOrb.addEventListener("click", () => {
+        orbOverlay.style.display = "none";
+        this.active = false;
+        this.stopListening();
+      });
+      
+      if (orbCore) {
+        orbCore.addEventListener("click", () => {
+          if (this.state === "idle" || this.state === "speaking") {
+            this.startListening();
+          } else if (this.state === "listening") {
+            this.stopListening();
+          }
+        });
+      }
+    },
+    
+    setState(state, extraText = "") {
+      this.state = state;
+      const orbStatus = document.getElementById("orb-status");
+      const orbTranscription = document.getElementById("orb-transcription");
+      const orbCore = document.querySelector(".orb-core");
+      const orbGlowPulse = document.querySelector(".orb-glow-pulse");
+      
+      if (!orbStatus) return;
+      
+      if (state === "idle") {
+        orbStatus.textContent = "Tap Orb to Speak";
+        orbTranscription.textContent = extraText || "System ready, Master.";
+        if (orbCore) orbCore.style.transform = "scale(1)";
+        if (orbGlowPulse) orbGlowPulse.style.animationDuration = "3s";
+      } else if (state === "listening") {
+        orbStatus.textContent = "Listening...";
+        orbTranscription.textContent = "Go ahead, Master. I am listening.";
+        if (orbCore) orbCore.style.transform = "scale(1.15)";
+        if (orbGlowPulse) orbGlowPulse.style.animationDuration = "1s";
+      } else if (state === "thinking") {
+        orbStatus.textContent = "Processing...";
+        orbTranscription.textContent = "Thinking...";
+        if (orbGlowPulse) orbGlowPulse.style.animationDuration = "0.5s";
+      } else if (state === "speaking") {
+        orbStatus.textContent = "Speaking";
+        orbTranscription.textContent = extraText || "...";
+        if (orbCore) orbCore.style.transform = "scale(1.05)";
+        if (orbGlowPulse) orbGlowPulse.style.animationDuration = "1.5s";
+      }
+    },
+    
+    startListening() {
+      if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+        this.setState("idle", "Speech recognition not supported in this browser.");
+        return;
+      }
+      
+      this.setState("listening");
+      
+      if (!this.recognition) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        this.recognition = new SpeechRecognition();
+        this.recognition.continuous = false;
+        this.recognition.interimResults = false;
+        
+        const selectPersona = document.getElementById("select-persona");
+        const currentMood = selectPersona ? selectPersona.value : "normal";
+        const hasHindi = currentMood === "normal" || currentMood === "roast" || currentMood === "study";
+        this.recognition.lang = hasHindi ? "hi-IN" : "en-US";
+        
+        this.recognition.onresult = (event) => {
+          const text = event.results[0][0].transcript;
+          this.setState("thinking");
+          
+          const messageInput = document.getElementById("message-input");
+          if (messageInput) {
+            messageInput.value = text;
+            
+            // Send options
+            const options = {
+              routingMode: document.getElementById("select-routing")?.value || "intelligence",
+              thinkingMode: document.getElementById("select-thinking")?.value || "normal",
+              swarmMode: document.getElementById("check-swarm")?.checked || false,
+              cognitiveState: document.getElementById("select-cognitive-state")?.value || "focus"
+            };
+            
+            lastMessageWasVoice = true;
+            
+            socket.emit("chat", { 
+              message: text, 
+              options: options
+            });
+            
+            messageInput.value = "";
+          }
+        };
+        
+        this.recognition.onerror = (event) => {
+          console.error("Speech Recognition Error:", event.error);
+          this.setState("idle", `Error: ${event.error}`);
+        };
+        
+        this.recognition.onend = () => {
+          if (this.state === "listening") {
+            this.setState("idle");
+          }
+        };
+      }
+      
+      this.recognition.start();
+    },
+    
+    stopListening() {
+      if (this.recognition) {
+        this.recognition.stop();
+      }
+      this.setState("idle");
+    }
+  };
+
+  // Initialize Voice Orb Controller
+  voiceOrbController.init();
 
   // Start 3D loop
   drawDreamspace();
