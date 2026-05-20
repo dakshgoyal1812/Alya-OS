@@ -2563,4 +2563,96 @@ html, body {
   line-height: 1.4;
 }
 
+/* ============================================================
+   🎨 MULTI-THEME OVERRIDES
+   ============================================================ */
+
+/* ----- Light Glass Theme ----- */
+body.theme-light {
+  --bg-deep: #f1f5f9;
+  --bg-ocean: #e2e8f0;
+  --bg-surface: #cbd5e1;
+  --bg-card: rgba(255, 255, 255, 0.7);
+  --bg-glass: rgba(255, 255, 255, 0.4);
+  --bg-input: rgba(255, 255, 255, 0.85);
+
+  --accent-500: #0891b2;
+  --accent-400: #06b6d4;
+  --accent-300: #22d3ee;
+  --accent-glow: rgba(8, 145, 178, 0.2);
+
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --border-subtle: rgba(15, 23, 42, 0.08);
+}
+body.theme-light canvas#background-canvas {
+  opacity: 0.15;
+}
+
+/* ----- Cyberpunk Neon Theme ----- */
+body.theme-cyberpunk {
+  --bg-deep: #0a0410;
+  --bg-ocean: #160723;
+  --bg-surface: #240a36;
+  --bg-card: rgba(36, 10, 54, 0.85);
+  --bg-glass: rgba(36, 10, 54, 0.6);
+  --bg-input: rgba(46, 12, 68, 0.9);
+
+  --accent-500: #d946ef;
+  --accent-400: #e879f9;
+  --accent-300: #f5d0fe;
+  --accent-glow: rgba(217, 70, 239, 0.35);
+
+  --ocean-500: #3b82f6;
+  --ocean-400: #60a5fa;
+  --ocean-300: #93c5fd;
+
+  --text-primary: #00ffff;
+  --text-secondary: #cc99ff;
+  --text-muted: #8b5cf6;
+  --border-subtle: rgba(217, 70, 239, 0.25);
+}
+
+/* ----- Sage Study Theme ----- */
+body.theme-sage {
+  --bg-deep: #0d1511;
+  --bg-ocean: #15241b;
+  --bg-surface: #203628;
+  --bg-card: rgba(32, 54, 40, 0.85);
+  --bg-glass: rgba(32, 54, 40, 0.6);
+  --bg-input: rgba(38, 66, 48, 0.9);
+
+  --accent-500: #10b981;
+  --accent-400: #34d399;
+  --accent-300: #6ee7b7;
+  --accent-glow: rgba(16, 185, 129, 0.3);
+
+  --text-primary: #e6f7ed;
+  --text-secondary: #a7f3d0;
+  --text-muted: #34d399;
+  --border-subtle: rgba(16, 185, 129, 0.2);
+}
+
+/* ----- Sakura Blossom Theme ----- */
+body.theme-sakura {
+  --bg-deep: #160c11;
+  --bg-ocean: #24131b;
+  --bg-surface: #361b29;
+  --bg-card: rgba(54, 27, 41, 0.85);
+  --bg-glass: rgba(54, 27, 41, 0.6);
+  --bg-input: rgba(66, 32, 49, 0.9);
+
+  --accent-500: #ec4899;
+  --accent-400: #f472b6;
+  --accent-300: #fbcfe8;
+  --accent-glow: rgba(236, 72, 153, 0.3);
+
+  --text-primary: #ffe4e6;
+  --text-secondary: #fecdd3;
+  --text-muted: #f472b6;
+  --border-subtle: rgba(236, 72, 153, 0.2);
+}
+
+
 

@@ -931,6 +931,27 @@
   setInterval(fetchStatus, 10000);
   fetchStatus(); // Fetch immediately on page load
 
+  // --- Theme Selection ---
+  const themeSelect = document.getElementById("select-theme");
+  if (themeSelect) {
+    const savedTheme = localStorage.getItem("alya-theme") || "dark";
+    themeSelect.value = savedTheme;
+    applyTheme(savedTheme);
+
+    themeSelect.addEventListener("change", (e) => {
+      const selected = e.target.value;
+      localStorage.setItem("alya-theme", selected);
+      applyTheme(selected);
+    });
+  }
+
+  function applyTheme(theme) {
+    document.body.classList.remove("theme-light", "theme-cyberpunk", "theme-sage", "theme-sakura");
+    if (theme !== "dark") {
+      document.body.classList.add(`theme-${theme}`);
+    }
+  }
+
   // ============================================================
   // ✨ HOLOGRAM AVATAR STATE ENGINE
   // ============================================================
