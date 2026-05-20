@@ -64,11 +64,7 @@ export class WhatsAppBridge {
       });
 
       this.client.on("qr", (qr) => {
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qr)}`;
-        console.log("\n✨ WhatsApp: Scan this QR code with your phone!");
-        console.log(`🔗 QR Link: ${qrUrl}\n`);
-        qrcode.generate(qr, { small: true });
-        this.lastQR = qr; // Expose for API
+        this.lastQR = qr; // Expose internally for API
         if (this.qrCallback) this.qrCallback(qr);
       });
 
