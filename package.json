@@ -10,6 +10,9 @@
     "dev": "node --watch src/index.js"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
     "@slack/bolt": "^3.22.0",
     "chalk": "^5.4.1",
     "discord.js": "^14.16.3",

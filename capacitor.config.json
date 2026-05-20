@@ -1,0 +1,9 @@
+{
+  "appId": "com.alya.os",
+  "appName": "Alya OS",
+  "webDir": "web",
+  "server": {
+    "url": "https://alya-os.onrender.com/",
+    "cleartext": true
+  }
+}
