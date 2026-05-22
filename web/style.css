@@ -2654,5 +2654,177 @@ body.theme-sakura {
   --border-subtle: rgba(236, 72, 153, 0.2);
 }
 
+/* ============================================================
+   🧠 AUTO-HEALER TERMINAL & CORE STYLES
+   ============================================================ */
+
+#w-healer {
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+#w-healer.active {
+  display: flex;
+}
+
+.healer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 10px;
+}
+
+.healer-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--accent-300);
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+
+.healer-status-badge {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  font-weight: bold;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 99px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+}
+
+.healer-status-badge.idle {
+  background: rgba(100, 116, 139, 0.1);
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+.healer-status-badge.healing {
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.3);
+  animation: pulseBadge 1.5s infinite alternate;
+}
+
+.healer-status-badge.testing {
+  background: rgba(168, 85, 247, 0.1);
+  color: #c084fc;
+  border-color: rgba(192, 132, 252, 0.3);
+  animation: pulseBadge 1.5s infinite alternate;
+}
+
+.healer-status-badge.pushing {
+  background: rgba(6, 182, 212, 0.1);
+  color: #22d3ee;
+  border-color: rgba(34, 211, 238, 0.3);
+  animation: pulseBadge 1.5s infinite alternate;
+}
+
+.healer-status-badge.success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.4);
+}
+
+.healer-status-badge.error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+@keyframes pulseBadge {
+  0% { opacity: 0.6; box-shadow: 0 0 5px currentColor; }
+  100% { opacity: 1; box-shadow: 0 0 15px currentColor; }
+}
+
+.healer-desc {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.healer-trigger-box {
+  display: flex;
+  gap: 10px;
+}
+
+.healer-trigger-box input {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  outline: none;
+  font-family: var(--font-sans);
+}
+
+.healer-trigger-box input:focus {
+  border-color: var(--accent-500);
+}
+
+.terminal-log-container {
+  display: flex;
+  flex-direction: column;
+  background: rgba(3, 7, 18, 0.8);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  flex: 1;
+  min-height: 250px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  overflow: hidden;
+}
+
+.terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.7);
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.terminal-header .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.terminal-header .dot.red { background: #ef4444; }
+.terminal-header .dot.yellow { background: #f59e0b; }
+.terminal-header .dot.green { background: #10b981; }
+
+.terminal-title {
+  margin-left: 8px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.terminal-body {
+  flex: 1;
+  margin: 0;
+  padding: 12px;
+  color: #34d399;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
 
 

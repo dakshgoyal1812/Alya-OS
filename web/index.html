@@ -301,13 +301,14 @@
 
             <!-- Right Side: Notion/Sandbox Panel (Hidden by default, shown in workspace mode) -->
             <div class="workspace-right-panel" id="workspace-right-panel" style="display: none;">
-              <!-- Tabs for Workspace tools -->
-              <div class="workspace-tabs">
-                <button class="w-tab-btn active" data-wtab="w-notes">📝 Notes</button>
-                <button class="w-tab-btn" data-wtab="w-sandbox">💻 Sandbox Compiler</button>
-                <button class="w-tab-btn" data-wtab="w-tasks">📋 Life OS Planner</button>
-                <button class="w-tab-btn" data-wtab="w-browser">🌐 AI Browser</button>
-              </div>
+                <!-- Tabs for Workspace tools -->
+                <div class="workspace-tabs">
+                  <button class="w-tab-btn active" data-wtab="w-notes">📝 Notes</button>
+                  <button class="w-tab-btn" data-wtab="w-sandbox">💻 Sandbox Compiler</button>
+                  <button class="w-tab-btn" data-wtab="w-tasks">📋 Life OS Planner</button>
+                  <button class="w-tab-btn" data-wtab="w-browser">🌐 AI Browser</button>
+                  <button class="w-tab-btn" data-wtab="w-healer">🧠 Auto-Healer</button>
+                </div>
               
               <!-- Tab contents -->
               <div class="workspace-tab-content">
@@ -382,6 +383,32 @@
                     <button class="btn-primary" id="btn-browser-read" style="padding: 4px 10px; font-size: 11px;">Scrape & Summarize</button>
                   </div>
                   <div id="browser-output" class="browser-output-console">URL content and summaries will appear here after loading...</div>
+                </div>
+
+                <!-- Auto-Healer tab -->
+                <div id="w-healer" class="w-tab-pane">
+                  <div class="healer-header">
+                    <h4>🧠 Auto-Evolution Brain</h4>
+                    <span class="healer-status-badge idle" id="healer-status-badge">System Idle</span>
+                  </div>
+                  <p class="healer-desc">If a bug, exception, or runtime error occurs, Alya automatically uses LLM reasoning to debug, patch the file, and push the update to GitHub. 🚀</p>
+                  
+                  <div class="healer-trigger-box">
+                    <input type="text" id="healer-error-input" placeholder="Paste an error message or console log..." style="flex:1;" />
+                    <button class="btn-primary" id="btn-trigger-heal" style="padding: 4px 12px; font-size: 11px;">Trigger Auto-Heal</button>
+                  </div>
+                  
+                  <div class="terminal-log-container">
+                    <div class="terminal-header">
+                      <span class="dot red"></span>
+                      <span class="dot yellow"></span>
+                      <span class="dot green"></span>
+                      <span class="terminal-title">evolution_engine.log</span>
+                    </div>
+                    <pre class="terminal-body" id="healer-logs">Alya Auto-Evolution Engine initialized...
+Waiting for exceptions or manual diagnostics...
+</pre>
+                  </div>
                 </div>
               </div>
             </div>
@@ -540,6 +567,7 @@
                   <select id="select-global-mood" class="header-select" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
                     <option value="normal">Normal Affirmative devoteness</option>
                     <option value="chill">Chill best-friend slang talk</option>
+                    <option value="genz">Gen Z slang & unfiltered vibes</option>
                     <option value="engineer">Strict code analyzer</option>
                     <option value="therapy">Therapist listener</option>
                     <option value="roast">Brutal logical roasting critic</option>

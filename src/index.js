@@ -105,10 +105,16 @@ async function main() {
   // Global Error Handlers
   process.on("unhandledRejection", (reason, promise) => {
     console.error("🚨 Unhandled Rejection at:", promise, "reason:", reason);
+    if (global.healer) {
+      global.healer.reportError(reason instanceof Error ? reason : new Error(String(reason)));
+    }
   });
 
   process.on("uncaughtException", (err) => {
     console.error("🚨 Uncaught Exception:", err);
+    if (global.healer) {
+      global.healer.reportError(err);
+    }
   });
 
   // Graceful shutdown

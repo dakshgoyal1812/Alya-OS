@@ -19,6 +19,7 @@ import { AdvancedMemoryEngine } from "../core/advanced_memory.js";
 import { ExperimentalMindEngine } from "../core/experimental_mind.js";
 import { AIFirewallShield, AIRoutingEngine } from "../core/security_router.js";
 import { InhumanCognitiveEngine } from "../core/inhuman_cognitive.js";
+import { SelfHealingEngine } from "../core/self_healing.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -71,6 +72,10 @@ export class WebBridge {
     this.firewall = new AIFirewallShield();
     this.router = new AIRoutingEngine();
     this.inhuman = new InhumanCognitiveEngine();
+
+    // Auto-Evolution / Self-Healing Brain
+    this.healer = new SelfHealingEngine(this.io);
+    global.healer = this.healer;
   }
 
   async start() {
@@ -745,6 +750,23 @@ Please generate a motivating daily summary, highlighting priorities and providin
         role: "assistant",
         content: getRandomGreeting(),
         timestamp: new Date().toISOString(),
+      });
+
+      // Send healer logs history & current status
+      socket.emit("healer_history", {
+        logs: this.healer ? this.healer.logs : [],
+        status: this.healer ? (this.healer.isHealing ? "healing" : "idle") : "idle"
+      });
+
+      // Handle manual heal trigger
+      socket.on("trigger_heal", (data) => {
+        if (this.healer) {
+          const errorText = data.errorText || "";
+          this.healer.log("Manual trigger started by user...");
+          const mockError = new Error(errorText || "Manual heal request");
+          mockError.stack = errorText.includes("at ") ? errorText : `Error: Manual heal\n    at manual_trigger (src/core/llm.js:1:1)`;
+          this.healer.reportError(mockError);
+        }
       });
 
       // Handle chat messages

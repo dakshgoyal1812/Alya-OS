@@ -59,6 +59,51 @@
     connStatus.classList.remove("online");
   });
 
+  // --- Auto-Healer Logs & Status ---
+  const healerLogs = document.getElementById("healer-logs");
+  const healerStatusBadge = document.getElementById("healer-status-badge");
+
+  socket.on("healer_log", (data) => {
+    if (healerLogs) {
+      healerLogs.textContent += data.log + "\n";
+      healerLogs.scrollTop = healerLogs.scrollHeight;
+    }
+  });
+
+  socket.on("healer_status", (data) => {
+    if (healerStatusBadge) {
+      healerStatusBadge.className = `healer-status-badge ${data.status}`;
+      const statusTexts = {
+        idle: "System Idle",
+        healing: "Healing...",
+        testing: "Testing...",
+        pushing: "Pushing...",
+        success: "Success",
+        error: "Error"
+      };
+      healerStatusBadge.textContent = statusTexts[data.status] || data.status;
+    }
+  });
+
+  socket.on("healer_history", (data) => {
+    if (healerLogs) {
+      healerLogs.textContent = data.logs.join("\n") + (data.logs.length ? "\n" : "");
+      healerLogs.scrollTop = healerLogs.scrollHeight;
+    }
+    if (healerStatusBadge) {
+      healerStatusBadge.className = `healer-status-badge ${data.status}`;
+      const statusTexts = {
+        idle: "System Idle",
+        healing: "Healing...",
+        testing: "Testing...",
+        pushing: "Pushing...",
+        success: "Success",
+        error: "Error"
+      };
+      healerStatusBadge.textContent = statusTexts[data.status] || data.status;
+    }
+  });
+
   // --- Incoming messages ---
   socket.on("message", (data) => {
     hideWelcome();
@@ -2779,7 +2824,8 @@
         youtube: "🎥 YouTube Creator Engine loaded. Give me a topic and let's craft a viral hook, high-retention script, and tags!",
         instagram: "🤳 Social Media Reels Studio initialized. Let's design viral hooks, captions, and script concepts to get you trending!",
         resume: "📄 Executive Talent & Resume Mode. Let's optimize your career highlights, write strong cover letters, and prepare for interviews.",
-        roast: "🔥 ROAST MODE ENABLED. Main toh aapki intelligence test karne ke liye ready hoon, Master! Let's see what you've got."
+        roast: "🔥 ROAST MODE ENABLED. Main toh aapki intelligence test karne ke liye ready hoon, Master! Let's see what you've got.",
+        genz: "⚡ GEN Z MODE ACTIVATED! No cap, I am ready to serve the absolute best rizz, coding, and answers, fr fr. What's the vibe today? 🚀"
       };
       
       const content = introMessages[mood] || "App mode selected. How can I serve you, Master?";
@@ -2814,8 +2860,28 @@
       
       btn.classList.add("active");
       const tabId = btn.getAttribute("data-wtab");
-      document.getElementById(tabId).classList.add("active");
+      const targetPane = document.getElementById(tabId);
+      if (targetPane) targetPane.classList.add("active");
     });
+  });
+
+  // Trigger manual heal
+  const btnTriggerHeal = document.getElementById("btn-trigger-heal");
+  const healerErrorInput = document.getElementById("healer-error-input");
+  if (btnTriggerHeal && healerErrorInput) {
+    btnTriggerHeal.addEventListener("click", () => {
+      const errorText = healerErrorInput.value.trim();
+      if (!errorText) return;
+      socket.emit("trigger_heal", { errorText });
+      healerErrorInput.value = "";
+    });
+  }
+
+  // Global window error catcher to auto-report console errors to the healer
+  window.addEventListener("error", (event) => {
+    const errorMsg = event.error ? event.error.message : event.message;
+    const errorStack = event.error ? event.error.stack : `${errorMsg} at ${event.filename}:${event.lineno}:${event.colno}`;
+    socket.emit("trigger_heal", { errorText: `Browser Error: ${errorMsg}\nStack: ${errorStack}` });
   });
 
   // Notes Auto-save with debouncing
