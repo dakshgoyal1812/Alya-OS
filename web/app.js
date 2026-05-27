@@ -6,6 +6,26 @@
 (function () {
   "use strict";
 
+  // --- Security Helpers ---
+  function escapeHTML(str) {
+    if (str === null || str === undefined) return "";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function sanitizeUrl(url) {
+    if (!url) return "";
+    url = url.trim().replace(/["'\s]/g, "");
+    if (/^(https?:\/\/|\/)/i.test(url)) {
+      return url;
+    }
+    return "";
+  }
+
   // --- Elements ---
   const messagesEl = document.getElementById("messages");
   const welcomeEl = document.getElementById("welcome-screen");
@@ -57,6 +77,9 @@
   socket.on("disconnect", () => {
     connStatus.textContent = "Disconnected";
     connStatus.classList.remove("online");
+    isStreaming = false;
+    streamDiv = null;
+    if (sendBtn) sendBtn.disabled = false;
   });
 
   // --- Auto-Healer Logs & Status ---
@@ -140,6 +163,7 @@
       streamDiv = null;
     }
     isStreaming = false;
+    if (sendBtn) sendBtn.disabled = false;
     speak(data.content);
     scrollToBottom();
     setHologramState("idle");
@@ -155,6 +179,12 @@
   // --- Voice playback (ElevenLabs) ---
   let currentAudio = null;
   let elevenLabsVoicePlayed = false;
+
+  function restartWakeWordIfEnabled() {
+    if (isWakeWordEnabled && wakeWordRecognition && !isListening && !isStreaming) {
+      try { wakeWordRecognition.start(); } catch {}
+    }
+  }
 
   socket.on("voice", (data) => {
     elevenLabsVoicePlayed = true;
@@ -177,6 +207,8 @@
       }
       if (lastMessageWasVoice && !isListening) {
         startListening();
+      } else {
+        restartWakeWordIfEnabled();
       }
     };
   });
@@ -374,6 +406,7 @@
     inputEl.value = "";
     inputEl.style.height = "auto";
     isStreaming = true;
+    if (sendBtn) sendBtn.disabled = true;
 
     // Build payload message with RAG context if document is uploaded
     let payloadMessage = msg || "";
@@ -451,7 +484,9 @@
               : "None";
           }
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn("API failed:", e);
+      }
     }, 2000);
   }
 
@@ -469,10 +504,12 @@
         const markersEl = document.getElementById("undercurrent-markers");
         if (moodEl) moodEl.textContent = data.result.undercurrentMood;
         if (markersEl) {
-          markersEl.innerHTML = data.result.detectedMarkers.map(m => `• ${m}`).join("<br>");
+          markersEl.innerHTML = data.result.detectedMarkers.map(m => `• ${escapeHTML(m)}`).join("<br>");
         }
       }
-    } catch(e) {}
+    } catch(e) {
+      console.warn("API failed:", e);
+    }
   }
 
   // --- Chip Prompts ---
@@ -618,10 +655,21 @@
           const filename = parts[parts.length - 1];
           url = `/temp/${filename}`;
         }
+        url = sanitizeUrl(url);
+        if (!url) return "";
         return `<img src="${url}" style="max-width:100%; border-radius:8px; margin-top:8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">`;
       })
-      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%; border-radius:8px; margin-top:8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">') // Convert markdown images
-      .replace(/(https:\/\/image\.pollinations\.ai[^\s]+)/g, '<img src="$1" style="max-width:100%; border-radius:8px; margin-top:8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">') // Auto-embed raw pollinations URLs
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
+        const safeSrc = sanitizeUrl(src);
+        if (!safeSrc) return "";
+        const safeAlt = escapeHTML(alt);
+        return `<img src="${safeSrc}" alt="${safeAlt}" style="max-width:100%; border-radius:8px; margin-top:8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">`;
+      }) // Convert markdown images
+      .replace(/(https:\/\/image\.pollinations\.ai[^\s]+)/g, (match, url) => {
+        const safeUrl = sanitizeUrl(url);
+        if (!safeUrl) return "";
+        return `<img src="${safeUrl}" style="max-width:100%; border-radius:8px; margin-top:8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">`;
+      }) // Auto-embed raw pollinations URLs
       .replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
       .replace(/`([^`]+)`/g, "<code>$1</code>")
       .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
@@ -636,6 +684,8 @@
   let isListening = false;
   let autoSendTimer = null;
   let lastMessageWasVoice = false;
+  let wakeWordRecognition = null;
+  let isWakeWordEnabled = false;
 
   // Web Audio Visualizer state
   let audioContext = null;
@@ -711,6 +761,13 @@
 
   async function startListening() {
     if (!recognition) return;
+    
+    // Set language dynamically based on persona
+    const selectPersona = document.getElementById("select-persona");
+    const currentMood = selectPersona ? selectPersona.value : "normal";
+    const hasHindi = currentMood === "normal" || currentMood === "roast" || currentMood === "study";
+    recognition.lang = hasHindi ? "hi-IN" : "en-US";
+
     isListening = true;
     voiceBtn.classList.add("recording");
     voiceIndicator.classList.add("active");
@@ -741,6 +798,8 @@
       micStreamForVisualizer.getTracks().forEach(track => track.stop());
       micStreamForVisualizer = null;
     }
+    
+    restartWakeWordIfEnabled();
   }
 
   function startVisualizer(stream) {
@@ -861,6 +920,8 @@
         }
         if (lastMessageWasVoice && !isListening) {
           startListening();
+        } else {
+          restartWakeWordIfEnabled();
         }
       };
 
@@ -881,6 +942,7 @@
   }
 
   async function fetchStatus() {
+    if (socket && !socket.connected) return;
     // 1. Fetch Health Data
     const health = await safeFetchJson("/api/health");
     if (health) {
@@ -963,8 +1025,8 @@
           const schedStr = [dateStr, timeStr].filter(Boolean).join(' at ');
           return `
             <li class="reminder-item">
-              <span class="reminder-text">${rem.text || rem.reminder}</span>
-              <span class="reminder-time">⏰ ${schedStr || 'Scheduled'}</span>
+              <span class="reminder-text">${escapeHTML(rem.text || rem.reminder)}</span>
+              <span class="reminder-time">⏰ ${escapeHTML(schedStr || 'Scheduled')}</span>
             </li>
           `;
         }).join("");
@@ -1211,7 +1273,7 @@
         } else {
           habitsList.innerHTML = data.habits.map(h => {
             const confPercent = Math.round((h.confidence || 0) * 100);
-            return `<li>${h.habit} <span style="float:right;color:var(--accent-400)">${confPercent}% conf</span></li>`;
+            return `<li>${escapeHTML(h.habit)} <span style="float:right;color:var(--accent-400)">${confPercent}% conf</span></li>`;
           }).join("");
         }
       }
@@ -1259,19 +1321,19 @@
         listEl.innerHTML = `<div style="grid-column:1/-1" class="reminder-empty">No active automation workflows configured.</div>`;
       } else {
         listEl.innerHTML = data.workflows.map(wf => `
-          <div class="wf-card" id="wf-card-${wf.id}">
+          <div class="wf-card" id="wf-card-${escapeHTML(wf.id)}">
             <div class="wf-card-header">
-              <h5>${wf.name}</h5>
+              <h5>${escapeHTML(wf.name)}</h5>
               <span class="wf-status ${wf.active ? 'active' : 'inactive'}">${wf.active ? 'Active' : 'Inactive'}</span>
             </div>
-            <p><strong>Trigger:</strong> ${wf.trigger}</p>
-            <p><strong>Actions:</strong> ${wf.actions.join(" ➔ ")}</p>
+            <p><strong>Trigger:</strong> ${escapeHTML(wf.trigger)}</p>
+            <p><strong>Actions:</strong> ${wf.actions.map(escapeHTML).join(" ➔ ")}</p>
             <div class="wf-card-actions">
-              <button class="btn-wf-action btn-wf-trigger" data-id="${wf.id}">🚀 Run Trigger</button>
-              <button class="btn-wf-action btn-wf-toggle" data-id="${wf.id}" data-active="${wf.active ? 'false' : 'true'}">
+              <button class="btn-wf-action btn-wf-trigger" data-id="${escapeHTML(wf.id)}">🚀 Run Trigger</button>
+              <button class="btn-wf-action btn-wf-toggle" data-id="${escapeHTML(wf.id)}" data-active="${wf.active ? 'false' : 'true'}">
                 ${wf.active ? 'Disable' : 'Enable'}
               </button>
-              <button class="btn-wf-action btn-wf-delete" data-id="${wf.id}">❌ Delete</button>
+              <button class="btn-wf-action btn-wf-delete" data-id="${escapeHTML(wf.id)}">❌ Delete</button>
             </div>
           </div>
         `).join("");
@@ -1835,7 +1897,9 @@
           }
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn("API failed:", e);
+    }
   }, 3000);
 
   function showProactiveSuggestion(clipboardContent) {
@@ -1852,7 +1916,7 @@
     div.style.fontSize = "12px";
     div.style.color = "#a5f3fc";
     
-    let preview = clipboardContent.substring(0, 60) + "...";
+    let preview = escapeHTML(clipboardContent.substring(0, 60) + "...");
     div.innerHTML = `💡 **Clipboard Watcher**: Detected item: \`${preview}\`. <button id="btn-helper-ask" style="background:#06b6d4; border:none; padding:2px 8px; border-radius:4px; color:#000; font-size:10px; cursor:pointer;">Ask Alya to review this</button>`;
     
     container.appendChild(div);
@@ -1907,7 +1971,7 @@
       });
       const data = await res.json();
       if (data.success) {
-        out.innerHTML = `<strong>Simulated Outcome (${data.result.timeframe}):</strong><br>${data.result.simulatedOutcome}`;
+        out.innerHTML = `<strong>Simulated Outcome (${escapeHTML(data.result.timeframe)}):</strong><br>${escapeHTML(data.result.simulatedOutcome)}`;
       }
     } catch (e) {
       out.textContent = "Error running multiverse branches.";
@@ -1930,7 +1994,7 @@
       });
       const data = await res.json();
       if (data.success) {
-        out.innerHTML = `<strong>Result:</strong> ${data.result.summary}<br><small>Confidence Level: High. Calculation matches risk aversion formulas.</small>`;
+        out.innerHTML = `<strong>Result:</strong> ${escapeHTML(data.result.summary)}<br><small>Confidence Level: High. Calculation matches risk aversion formulas.</small>`;
       }
     } catch (e) {
       out.textContent = "Error calculating regret score.";
@@ -1953,7 +2017,7 @@
       });
       const data = await res.json();
       if (data.success) {
-        out.innerHTML = `<strong>Deception Probability:</strong> ${data.result.deceptionProbability}%<br><strong>Verdict:</strong> ${data.result.verdict}`;
+        out.innerHTML = `<strong>Deception Probability:</strong> ${escapeHTML(data.result.deceptionProbability)}%<br><strong>Verdict:</strong> ${escapeHTML(data.result.verdict)}`;
       }
     } catch (e) {
       out.textContent = "Error scanning statement.";
@@ -1972,7 +2036,7 @@
       });
       const data = await res.json();
       if (data.success) {
-        out.innerHTML = `<strong>Created ${data.count} training pairs!</strong><br><small>Data saved to data/experimental_state.json for local model ingestion.</small>`;
+        out.innerHTML = `<strong>Created ${escapeHTML(data.count)} training pairs!</strong><br><small>Data saved to data/experimental_state.json for local model ingestion.</small>`;
       }
     } catch (e) {
       out.textContent = "Error simulating fine-tuning.";
@@ -2083,9 +2147,9 @@
           } else {
             logsEl.innerHTML = data.threats.map(t => {
               return `<div style="color: #ef4444; border-bottom: 1px solid rgba(239, 68, 68, 0.15); padding: 4px 0; line-height:1.2;">
-                [${new Date(t.timestamp).toLocaleTimeString()}] Score: ${t.threatScore}<br>
-                Pattern: "${t.matchedPattern}"<br>
-                Input: "${t.promptPreview}"
+                [${escapeHTML(new Date(t.timestamp).toLocaleTimeString())}] Score: ${escapeHTML(t.threatScore)}<br>
+                Pattern: "${escapeHTML(t.matchedPattern)}"<br>
+                Input: "${escapeHTML(t.promptPreview)}"
               </div>`;
             }).join("");
             if (statusEl) {
@@ -2095,7 +2159,9 @@
           }
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn("API failed:", e);
+    }
   }
 
   // Query experimental stats on mount
@@ -2140,7 +2206,9 @@
           });
         }
       }
-    } catch(e) {}
+    } catch(e) {
+      console.warn("API failed:", e);
+    }
   }
   loadExperimentalStats();
 
@@ -2167,9 +2235,12 @@
       const data = await res.json();
       if (data.success && data.analysis) {
         const a = data.analysis;
-        out.innerHTML = `<strong>Total Deleted Drafts:</strong> ${a.totalDeletedDrafts}<br><strong>Diagnosis:</strong> ${a.diagnosis}`;
+        out.innerHTML = `<strong>Total Deleted Drafts:</strong> ${escapeHTML(a.totalDeletedDrafts)}<br><strong>Diagnosis:</strong> ${escapeHTML(a.diagnosis)}`;
       }
-    } catch(e) { out.textContent = "Error scanning drafts."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error scanning drafts.";
+    }
   });
 
   document.getElementById("btn-run-parallel-self")?.addEventListener("click", async () => {
@@ -2180,9 +2251,12 @@
       const res = await fetch("/api/cognitive/layer1/parallel");
       const data = await res.json();
       if (data.success && data.conversation) {
-        out.innerHTML = data.conversation.map(c => `<strong>${c.speaker}:</strong> ${c.text}`).join("<br><br>");
+        out.innerHTML = data.conversation.map(c => `<strong>${escapeHTML(c.speaker)}:</strong> ${escapeHTML(c.text)}`).join("<br><br>");
       }
-    } catch(e) { out.textContent = "Error running simulator."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error running simulator.";
+    }
   });
 
   document.getElementById("btn-detect-reality")?.addEventListener("click", async () => {
@@ -2199,9 +2273,12 @@
       });
       const data = await res.json();
       if (data.success && data.result) {
-        out.innerHTML = `<strong>Accuracy Score:</strong> ${data.result.accuracyProbability}%<br><strong>Verdict:</strong> ${data.result.verdict}`;
+        out.innerHTML = `<strong>Accuracy Score:</strong> ${escapeHTML(data.result.accuracyProbability)}%<br><strong>Verdict:</strong> ${escapeHTML(data.result.verdict)}`;
       }
-    } catch(e) { out.textContent = "Error verifying statements."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error verifying statements.";
+    }
   });
 
   document.getElementById("btn-run-iceberg")?.addEventListener("click", async () => {
@@ -2218,9 +2295,12 @@
       });
       const data = await res.json();
       if (data.success && data.iceberg) {
-        out.innerHTML = data.iceberg.map(l => `<strong>Layer ${l.layer} [${l.label}]:</strong> ${l.description}`).join("<br><br>");
+        out.innerHTML = data.iceberg.map(l => `<strong>Layer ${escapeHTML(l.layer)} [${escapeHTML(l.label)}]:</strong> ${escapeHTML(l.description)}`).join("<br><br>");
       }
-    } catch(e) { out.textContent = "Error analyzing iceberg layers."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error analyzing iceberg layers.";
+    }
   });
 
   // Layer 2 Event Listeners
@@ -2240,14 +2320,17 @@
       if (data.success && data.feedback) {
         const fb = data.feedback;
         out.innerHTML = `
-          <strong>🚀 Elon Musk:</strong> ${fb.elonMusk}<br><br>
-          <strong>🧘 Marcus Aurelius:</strong> ${fb.marcusAurelius}<br><br>
-          <strong>⚓ Naval Ravikant:</strong> ${fb.navalRavikant}<br><br>
-          <strong>🍎 Steve Jobs:</strong> ${fb.steveJobs}<br><br>
-          <strong>⚛️ Richard Feynman:</strong> ${fb.richardFeynman}
+          <strong>🚀 Elon Musk:</strong> ${escapeHTML(fb.elonMusk)}<br><br>
+          <strong>🧘 Marcus Aurelius:</strong> ${escapeHTML(fb.marcusAurelius)}<br><br>
+          <strong>⚓ Naval Ravikant:</strong> ${escapeHTML(fb.navalRavikant)}<br><br>
+          <strong>🍎 Steve Jobs:</strong> ${escapeHTML(fb.steveJobs)}<br><br>
+          <strong>⚛️ Richard Feynman:</strong> ${escapeHTML(fb.richardFeynman)}
         `;
       }
-    } catch(e) { out.textContent = "Error consulting mentor board."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error consulting mentor board.";
+    }
   });
 
   document.getElementById("btn-build-palace")?.addEventListener("click", async () => {
@@ -2267,11 +2350,14 @@
       const data = await res.json();
       if (data.success && data.palace) {
         const p = data.palace;
-        let html = `<strong>Palace Location:</strong> ${p.palaceLocation}<br><br>`;
-        html += p.rooms.map(r => `<strong>${r.room}:</strong> ${r.anchorObject}<br><em>${r.recallPrompt}</em>`).join("<br><br>");
+        let html = `<strong>Palace Location:</strong> ${escapeHTML(p.palaceLocation)}<br><br>`;
+        html += p.rooms.map(r => `<strong>${escapeHTML(r.room)}:</strong> ${escapeHTML(r.anchorObject)}<br><em>${escapeHTML(r.recallPrompt)}</em>`).join("<br><br>");
         out.innerHTML = html;
       }
-    } catch(e) { out.textContent = "Error building memory palace."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error building memory palace.";
+    }
   });
 
   document.getElementById("btn-run-nostalgia")?.addEventListener("click", async () => {
@@ -2289,9 +2375,12 @@
       const data = await res.json();
       if (data.success && data.report) {
         const r = data.report;
-        out.innerHTML = `<strong>Nostalgic Narrative:</strong> ${r.romanticizedMemory}<br><br><strong>Actual Metrics:</strong> ${r.actualGenomeMetrics}<br><br><strong>Verdict:</strong> <em style="color:#ef4444">${r.verdict}</em>`;
+        out.innerHTML = `<strong>Nostalgic Narrative:</strong> ${escapeHTML(r.romanticizedMemory)}<br><br><strong>Actual Metrics:</strong> ${escapeHTML(r.actualGenomeMetrics)}<br><br><strong>Verdict:</strong> <em style="color:#ef4444">${escapeHTML(r.verdict)}</em>`;
       }
-    } catch(e) { out.textContent = "Error checking nostalgia filters."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error checking nostalgia filters.";
+    }
   });
 
   // Layer 3 Event Listeners
@@ -2309,9 +2398,12 @@
       });
       const data = await res.json();
       if (data.success && data.lever) {
-        out.innerHTML = `<strong>1% Action Lever:</strong> ${data.lever.leverAction}<br><strong>Impact ROI:</strong> ${data.lever.leverageMultiplier}<br><strong>Expected Cascade:</strong> ${data.lever.expectedCascade}`;
+        out.innerHTML = `<strong>1% Action Lever:</strong> ${escapeHTML(data.lever.leverAction)}<br><strong>Impact ROI:</strong> ${escapeHTML(data.lever.leverageMultiplier)}<br><strong>Expected Cascade:</strong> ${escapeHTML(data.lever.expectedCascade)}`;
       }
-    } catch(e) { out.textContent = "Error calculating chaos leverage."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error calculating chaos leverage.";
+    }
   });
 
   document.getElementById("btn-run-inversion")?.addEventListener("click", async () => {
@@ -2330,12 +2422,15 @@
       if (data.success && data.plan) {
         const p = data.plan;
         let html = `<strong>How to Guarantee Absolute Failure:</strong><br>`;
-        html += p.failureGuarantees.map(g => `• ${g}`).join("<br>") + `<br><br>`;
+        html += p.failureGuarantees.map(g => `• ${escapeHTML(g)}`).join("<br>") + `<br><br>`;
         html += `<strong>Inverted Action Plan (To Succeed):</strong><br>`;
-        html += p.invertedActionPlan.map(a => `• ${a}`).join("<br>");
+        html += p.invertedActionPlan.map(a => `• ${escapeHTML(a)}`).join("<br>");
         out.innerHTML = html;
       }
-    } catch(e) { out.textContent = "Error running inversion engine."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error running inversion engine.";
+    }
   });
 
   document.getElementById("btn-run-overton")?.addEventListener("click", async () => {
@@ -2352,9 +2447,12 @@
       });
       const data = await res.json();
       if (data.success && data.shift) {
-        out.innerHTML = `<strong>Current Window:</strong> ${data.shift.acceptableBelief}<br><br><strong>Boundary Concept:</strong> ${data.shift.boundaryIdea}<br><br><strong>Weekly Overton Discomfort Action:</strong> <em style="color:#a855f7;">${data.shift.uncomfortableActionStep}</em>`;
+        out.innerHTML = `<strong>Current Window:</strong> ${escapeHTML(data.shift.acceptableBelief)}<br><br><strong>Boundary Concept:</strong> ${escapeHTML(data.shift.boundaryIdea)}<br><br><strong>Weekly Overton Discomfort Action:</strong> <em style="color:#a855f7;">${escapeHTML(data.shift.uncomfortableActionStep)}</em>`;
       }
-    } catch(e) { out.textContent = "Error shifting Overton window."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error shifting Overton window.";
+    }
   });
 
   document.getElementById("btn-run-signalnoise")?.addEventListener("click", async () => {
@@ -2371,9 +2469,12 @@
       });
       const data = await res.json();
       if (data.success && data.classification) {
-        out.innerHTML = data.classification.map(c => `<strong>${c.item}:</strong> ${c.classification}`).join("<br>");
+        out.innerHTML = data.classification.map(c => `<strong>${escapeHTML(c.item)}:</strong> ${escapeHTML(c.classification)}`).join("<br>");
       }
-    } catch(e) { out.textContent = "Error filtering noise."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error filtering noise.";
+    }
   });
 
   // Layer 4 Event Listeners
@@ -2393,12 +2494,15 @@
       if (data.success && data.check) {
         const c = data.check;
         out.innerHTML = `
-          <strong>In 10 Minutes:</strong> ${c.in10Minutes}<br><br>
-          <strong>In 10 Months:</strong> ${c.in10Months}<br><br>
-          <strong>In 10 Years:</strong> ${c.in10Years}
+          <strong>In 10 Minutes:</strong> ${escapeHTML(c.in10Minutes)}<br><br>
+          <strong>In 10 Months:</strong> ${escapeHTML(c.in10Months)}<br><br>
+          <strong>In 10 Years:</strong> ${escapeHTML(c.in10Years)}
         `;
       }
-    } catch(e) { out.textContent = "Error running gut check."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error running gut check.";
+    }
   });
 
   document.getElementById("btn-log-ledger")?.addEventListener("click", async () => {
@@ -2417,9 +2521,12 @@
       });
       const data = await res.json();
       if (data.success && data.ledger) {
-        out.innerHTML = `<strong>Ledger Entry Recorded!</strong><br>Total historical logs: ${data.ledger.length} entries.`;
+        out.innerHTML = `<strong>Ledger Entry Recorded!</strong><br>Total historical logs: ${escapeHTML(data.ledger.length)} entries.`;
       }
-    } catch(e) { out.textContent = "Error logging to ledger."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error logging to ledger.";
+    }
   });
 
   document.getElementById("btn-run-deathbed")?.addEventListener("click", async () => {
@@ -2436,9 +2543,12 @@
       });
       const data = await res.json();
       if (data.success && data.filter) {
-        out.innerHTML = `<strong>Deathbed Significance Score:</strong> ${data.filter.deathbedSignificanceScore}/100<br><br><strong>Verdict:</strong> ${data.filter.verdict}`;
+        out.innerHTML = `<strong>Deathbed Significance Score:</strong> ${escapeHTML(data.filter.deathbedSignificanceScore)}/100<br><br><strong>Verdict:</strong> ${escapeHTML(data.filter.verdict)}`;
       }
-    } catch(e) { out.textContent = "Error verifying significance."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error verifying significance.";
+    }
   });
 
   document.getElementById("btn-run-gratitude")?.addEventListener("click", async () => {
@@ -2450,9 +2560,12 @@
       const data = await res.json();
       if (data.success && data.gratitude) {
         const g = data.gratitude;
-        out.innerHTML = `<strong>Current Asset:</strong> ${g.currentAsset}<br><strong>Forgotten Past Dream:</strong> ${g.pastDesire}<br><br><strong>Reset Verdict:</strong> <em>${g.baselineReset}</em>`;
+        out.innerHTML = `<strong>Current Asset:</strong> ${escapeHTML(g.currentAsset)}<br><strong>Forgotten Past Dream:</strong> ${escapeHTML(g.pastDesire)}<br><br><strong>Reset Verdict:</strong> <em>${escapeHTML(g.baselineReset)}</em>`;
       }
-    } catch(e) { out.textContent = "Error checking gratitude baseline."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error checking gratitude baseline.";
+    }
   });
 
   // Layer 5 Event Listeners
@@ -2471,14 +2584,17 @@
       const data = await res.json();
       if (data.success && data.preMortem) {
         const p = data.preMortem;
-        let html = `<strong>Plan Status:</strong> <span style="color:#ef4444;">${p.assumedStatus}</span><br><br>`;
+        let html = `<strong>Plan Status:</strong> <span style="color:#ef4444;">${escapeHTML(p.assumedStatus)}</span><br><br>`;
         html += `<strong>Why it failed (Post-Mortem Analysis):</strong><br>`;
-        html += p.postMortemReasons.map(r => `• ${r}`).join("<br>") + "<br><br>";
+        html += p.postMortemReasons.map(r => `• ${escapeHTML(r)}`).join("<br>") + "<br><br>";
         html += `<strong>Preventative Actions:</strong><br>`;
-        html += p.preventativeMitigations.map(m => `• ${m}`).join("<br>");
+        html += p.preventativeMitigations.map(m => `• ${escapeHTML(m)}`).join("<br>");
         out.innerHTML = html;
       }
-    } catch(e) { out.textContent = "Error running pre-mortem."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error running pre-mortem.";
+    }
   });
 
   document.getElementById("btn-run-destructor")?.addEventListener("click", async () => {
@@ -2497,11 +2613,14 @@
       if (data.success && data.destruction) {
         const d = data.destruction;
         let html = `<strong>Flaw Detections:</strong><br>`;
-        html += d.logicalFlaws.map(f => `• ${f}`).join("<br>") + "<br><br>";
-        html += `<strong>Surviving Truth:</strong> <span style="color:#10b981;">${d.survivingTruth}</span>`;
+        html += d.logicalFlaws.map(f => `• ${escapeHTML(f)}`).join("<br>") + "<br><br>";
+        html += `<strong>Surviving Truth:</strong> <span style="color:#10b981;">${escapeHTML(d.survivingTruth)}</span>`;
         out.innerHTML = html;
       }
-    } catch(e) { out.textContent = "Error testing idea."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error testing idea.";
+    }
   });
 
   document.getElementById("btn-run-risks")?.addEventListener("click", async () => {
@@ -2518,9 +2637,12 @@
       });
       const data = await res.json();
       if (data.success && data.ranked) {
-        out.innerHTML = data.ranked.map(r => `<strong>${r.worry}:</strong> Risk ${r.actualStatisticalRisk} (${r.suggestedAttentionAllocation})`).join("<br>");
+        out.innerHTML = data.ranked.map(r => `<strong>${escapeHTML(r.worry)}:</strong> Risk ${escapeHTML(r.actualStatisticalRisk)} (${escapeHTML(r.suggestedAttentionAllocation)})`).join("<br>");
       }
-    } catch(e) { out.textContent = "Error ranking risks."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error ranking risks.";
+    }
   });
 
   document.getElementById("btn-run-identity")?.addEventListener("click", async () => {
@@ -2531,9 +2653,12 @@
       const res = await fetch("/api/cognitive/layer5/identity");
       const data = await res.json();
       if (data.success && data.test) {
-        out.innerHTML = data.test.steps.map(s => `• ${s}`).join("<br>");
+        out.innerHTML = data.test.steps.map(s => `• ${escapeHTML(s)}`).join("<br>");
       }
-    } catch(e) { out.textContent = "Error running identity stress test."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error running identity stress test.";
+    }
   });
 
   // Layer 6 Event Listeners
@@ -2551,9 +2676,12 @@
       });
       const data = await res.json();
       if (data.success && data.rawRaw) {
-        out.innerHTML = `<strong>Ego Excuse:</strong> ${data.rawRaw.egoProtectiveNarrative}<br><br><strong>Raw Reality:</strong> ${data.rawRaw.dissolvedRawReality}`;
+        out.innerHTML = `<strong>Ego Excuse:</strong> ${escapeHTML(data.rawRaw.egoProtectiveNarrative)}<br><br><strong>Raw Reality:</strong> ${escapeHTML(data.rawRaw.dissolvedRawReality)}`;
       }
-    } catch(e) { out.textContent = "Error running ego dissolution."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error running ego dissolution.";
+    }
   });
 
   document.getElementById("btn-log-predict")?.addEventListener("click", async () => {
@@ -2572,7 +2700,10 @@
       if (data.success) {
         out.innerHTML = `<strong>Prediction Logged!</strong><br>Behavior registered for continuous audit tracking.`;
       }
-    } catch(e) { out.textContent = "Error logging prediction."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error logging prediction.";
+    }
   });
 
   document.getElementById("btn-run-final")?.addEventListener("click", async () => {
@@ -2589,9 +2720,12 @@
       });
       const data = await res.json();
       if (data.success && data.choice) {
-        out.innerHTML = `<strong>Conviction Choice:</strong> ${data.choice.finalConvictionChoice}<br><br><strong>Reasoning:</strong> ${data.choice.reasoning}`;
+        out.innerHTML = `<strong>Conviction Choice:</strong> ${escapeHTML(data.choice.finalConvictionChoice)}<br><br><strong>Reasoning:</strong> ${escapeHTML(data.choice.reasoning)}`;
       }
-    } catch(e) { out.textContent = "Error resolving final answer."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error resolving final answer.";
+    }
   });
 
   document.getElementById("btn-run-collective")?.addEventListener("click", async () => {
@@ -2603,9 +2737,12 @@
       const data = await res.json();
       if (data.success && data.feed) {
         const f = data.feed;
-        out.innerHTML = `<strong>Global Users Analyzed:</strong> ${f.globalUsersAnalyzed}<br><strong>Matching Pattern Nodes:</strong> ${f.matchingPatternCount}<br><br><strong>Historical Verdict:</strong> ${f.parallelLivesVerdict}`;
+        out.innerHTML = `<strong>Global Users Analyzed:</strong> ${escapeHTML(f.globalUsersAnalyzed)}<br><strong>Matching Pattern Nodes:</strong> ${escapeHTML(f.matchingPatternCount)}<br><br><strong>Historical Verdict:</strong> ${escapeHTML(f.parallelLivesVerdict)}`;
       }
-    } catch(e) { out.textContent = "Error pooling collective unconscious."; }
+    } catch(e) {
+      console.warn("API failed:", e);
+      out.textContent = "Error pooling collective unconscious.";
+    }
   });
 
   // 13. Privacy Fortress State Persistence and Execution
@@ -3002,9 +3139,9 @@
           li.className = "lifeos-item";
           li.innerHTML = `
             <div class="lifeos-item-left">
-              <span>🎯 ${goal.text}</span>
+              <span>🎯 ${escapeHTML(goal.text)}</span>
             </div>
-            <button class="delete-goal-btn" data-id="${goal.id}">&times;</button>
+            <button class="delete-goal-btn" data-id="${escapeHTML(goal.id)}">&times;</button>
           `;
           lifeosGoalsList.appendChild(li);
         });
@@ -3022,10 +3159,10 @@
           li.className = `lifeos-item ${task.completed ? 'completed' : ''}`;
           li.innerHTML = `
             <div class="lifeos-item-left">
-              <input type="checkbox" class="task-checkbox" data-id="${task.id}" ${task.completed ? 'checked' : ''} />
-              <span>${task.text}</span>
+              <input type="checkbox" class="task-checkbox" data-id="${escapeHTML(task.id)}" ${task.completed ? 'checked' : ''} />
+              <span>${escapeHTML(task.text)}</span>
             </div>
-            <button class="delete-task-btn" data-id="${task.id}">&times;</button>
+            <button class="delete-task-btn" data-id="${escapeHTML(task.id)}">&times;</button>
           `;
           lifeosTasksList.appendChild(li);
         });
@@ -3285,6 +3422,74 @@
       this.setState("idle");
     }
   };
+
+  // --- Wake Word Background Listener ---
+  function initWakeWord() {
+    if (!SpeechRecognition) return;
+    wakeWordRecognition = new SpeechRecognition();
+    wakeWordRecognition.continuous = true;
+    wakeWordRecognition.interimResults = true;
+    wakeWordRecognition.lang = "en-US";
+
+    wakeWordRecognition.onresult = (event) => {
+      if (isListening || isStreaming) return;
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        const transcript = event.results[i][0].transcript.toLowerCase();
+        if (transcript.includes("alya") || transcript.includes("alia") || transcript.includes("arya") || transcript.includes("halya")) {
+          console.log("🧬 Wake word detected!");
+          triggerWakeWordActivation();
+          break;
+        }
+      }
+    };
+
+    wakeWordRecognition.onend = () => {
+      if (isWakeWordEnabled && !isListening && !isStreaming) {
+        try { wakeWordRecognition.start(); } catch {}
+      }
+    };
+  }
+
+  function triggerWakeWordActivation() {
+    if (wakeWordRecognition) {
+      try { wakeWordRecognition.stop(); } catch {}
+    }
+    
+    // Play sci-fi chime
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.15);
+    } catch (e) {}
+    
+    setTimeout(() => {
+      startListening();
+    }, 200);
+  }
+
+  const wakeWordCheckbox = document.getElementById("check-wakeword");
+  if (wakeWordCheckbox) {
+    wakeWordCheckbox.addEventListener("change", (e) => {
+      isWakeWordEnabled = e.target.checked;
+      if (isWakeWordEnabled) {
+        if (!wakeWordRecognition) initWakeWord();
+        try { wakeWordRecognition.start(); } catch {}
+        console.log("Wake word detection enabled.");
+      } else {
+        if (wakeWordRecognition) {
+          try { wakeWordRecognition.stop(); } catch {}
+        }
+        console.log("Wake word detection disabled.");
+      }
+    });
+  }
 
   // Initialize Voice Orb Controller
   voiceOrbController.init();

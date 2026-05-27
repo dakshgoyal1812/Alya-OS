@@ -574,6 +574,20 @@ export const availableTools = [
         required: ["action"]
       }
     }
+  },
+  {
+    type: "function",
+    function: {
+      name: "desktop_autopilot",
+      description: "Autonomous execution loop to control your desktop and achieve complex UI goals (opening websites, ordering things, booking tasks, searching things). Runs in a loop using vision, screenshots, mouse, and keyboard.",
+      parameters: {
+        type: "object",
+        properties: {
+          goal: { type: "string", description: "The detailed desktop goal to achieve (e.g. 'search for weather in London on google Chrome')." }
+        },
+        required: ["goal"]
+      }
+    }
   }
 ];
 
@@ -583,6 +597,80 @@ export async function executeTool(name, args) {
     switch (name) {
       case "get_current_time":
         return new Date().toLocaleString();
+
+      case "desktop_autopilot": {
+        const { LLMEngine } = await import("./llm.js");
+        const llm = new LLMEngine();
+        const goal = args.goal;
+        
+        let steps = [];
+        let completed = false;
+        let iteration = 0;
+        const maxIterations = 5;
+        
+        steps.push(`Starting autopilot for goal: "${goal}"`);
+        
+        while (!completed && iteration < maxIterations) {
+          iteration++;
+          steps.push(`[Iteration ${iteration}] Capturing screenshot...`);
+          
+          const screenshotResult = await executeTool("take_screenshot", {});
+          const screenshotPath = path.join(process.cwd(), "web", "screenshot.png");
+          
+          if (!fs.existsSync(screenshotPath)) {
+            steps.push(`Error: Screenshot failed to generate.`);
+            break;
+          }
+          
+          const base64Data = fs.readFileSync(screenshotPath, { encoding: "base64" });
+          
+          const prompt = `You are Alya's Desktop Autopilot. Your goal is: "${goal}"
+You are currently on iteration ${iteration} of ${maxIterations}.
+Analyze the screenshot of the user's screen.
+Decide the next action to perform. You can choose ONE of the following actions:
+1. Click at coordinates (X, Y) -> Output format: {"action": "click", "x": 100, "y": 200, "explanation": "clicking the search bar"}
+2. Type text -> Output format: {"action": "type", "text": "my search query", "explanation": "typing query"}
+3. Open an application -> Output format: {"action": "open", "command": "chrome.exe", "explanation": "opening browser"}
+4. Complete -> Output format: {"action": "complete", "explanation": "goal achieved successfully"}
+
+Ensure you return a valid JSON object matching the above format. Only return the raw JSON, no markdown code blocks.`;
+
+          steps.push(`Analyzing screen with vision model...`);
+          const visionResponse = await llm.analyzeImage(base64Data, "image/png", prompt);
+          
+          let actionObj;
+          try {
+            const cleaned = visionResponse.replace(/```json/g, "").replace(/```/g, "").trim();
+            actionObj = JSON.parse(cleaned);
+          } catch (e) {
+            steps.push(`Error parsing vision response: ${visionResponse}`);
+            break;
+          }
+          
+          steps.push(`Action decided: ${actionObj.action} - ${actionObj.explanation || ""}`);
+          
+          if (actionObj.action === "click") {
+            const clickRes = await executeTool("mouse_control", { x: actionObj.x, y: actionObj.y, click: true });
+            steps.push(clickRes);
+          } else if (actionObj.action === "type") {
+            const typeRes = await executeTool("keyboard_type", { text: actionObj.text });
+            steps.push(typeRes);
+          } else if (actionObj.action === "open") {
+            const openRes = await executeTool("open_application", { command: actionObj.command });
+            steps.push(openRes);
+          } else if (actionObj.action === "complete") {
+            completed = true;
+            steps.push(`Goal achieved successfully!`);
+          } else {
+            steps.push(`Unknown action: ${actionObj.action}`);
+            break;
+          }
+          
+          await new Promise(r => setTimeout(r, 1500));
+        }
+        
+        return `Autopilot execution summary:\n` + steps.join("\n");
+      }
       
       case "get_system_info":
         return JSON.stringify({

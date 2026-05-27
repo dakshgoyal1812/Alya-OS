@@ -669,15 +669,16 @@ User Level: ${data.level} (Streak: ${data.streak} Days)`;
     }
   }
 
-  async analyzeImage(base64Data, mimeType = "image/jpeg") {
+  async analyzeImage(base64Data, mimeType = "image/jpeg", customPrompt = null) {
     try {
+      const promptText = customPrompt || "Describe this image in detail. What is happening? Are there any text, objects, or people?";
       const response = await this.openai.chat.completions.create({
         model: "llama-3.2-11b-vision-preview", // Use Groq's dedicated vision model
         messages: [
           {
             role: "user",
             content: [
-              { type: "text", text: "Describe this image in detail. What is happening? Are there any text, objects, or people?" },
+              { type: "text", text: promptText },
               { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } }
             ]
           }

@@ -4,6 +4,7 @@ import path from "path";
 import { LLMEngine } from "./llm.js";
 import { getHistory, addMessage } from "./memory.js";
 import { SelfEvolutionEngine } from "./self_evolution.js";
+import { EmailAutopilot } from "./email_agent.js";
 
 const AUTOMATION_FILE = path.join(process.cwd(), "data", "automations.json");
 
@@ -35,6 +36,18 @@ export function startCronJobs(bridges) {
     }
   });
   console.log("🧬 [Self-Evolution] Scheduled daily self-evolution loop at midnight.");
+
+  // Schedule Email Inbox Autopilot (every 15 minutes)
+  const emailAgent = new EmailAutopilot();
+  cron.schedule("*/15 * * * *", async () => {
+    try {
+      console.log("✉️ [Inbox-Autopilot] Checking inbox...");
+      await emailAgent.checkInbox();
+    } catch (err) {
+      console.error("❌ [Inbox-Autopilot] Scheduled check failed:", err.message);
+    }
+  });
+  console.log("✉️ [Inbox-Autopilot] Scheduled inbox checking every 15 minutes.");
   
   const automations = JSON.parse(fs.readFileSync(AUTOMATION_FILE, "utf-8"));
   console.log(`\n⚙️  Workflow Automation: Starting ${automations.length} background jobs...`);
