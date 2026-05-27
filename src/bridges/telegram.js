@@ -9,6 +9,7 @@ import { getHistory, addMessage, clearHistory } from "../core/memory.js";
 import { getRandomGreeting, SERVICE_CONNECT_MESSAGES } from "../core/personality.js";
 import { generateTTS } from "../core/tts.js";
 import fs from "fs";
+import { join } from "path";
 
 export class TelegramBridge {
   constructor(config) {
@@ -134,12 +135,40 @@ _All systems operational._ ✨`;
       }
     });
 
-    // Handle voice messages
+    // Handle voice messages using Groq Whisper transcription
     this.bot.on("voice", async (msg) => {
-      this.bot.sendMessage(
-        msg.chat.id,
-        "✨ I noticed you sent a voice message! I can only process text right now. Try typing it out instead."
-      );
+      const chatId = msg.chat.id;
+      
+      try {
+        await this.bot.sendChatAction(chatId, "record_audio");
+        
+        const tempDir = join(process.cwd(), "data", "temp");
+        if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+        
+        // Download the voice file from Telegram
+        const localPath = await this.bot.downloadFile(msg.voice.file_id, tempDir);
+        
+        // Transcribe using Groq Whisper
+        const transcription = await this.llm.transcribeAudio(localPath);
+        
+        // Clean up temp file
+        if (fs.existsSync(localPath)) fs.unlinkSync(localPath);
+        
+        if (!transcription || transcription.trim().length === 0) {
+          await this.bot.sendMessage(chatId, "✨ I couldn't hear or understand the voice note. Could you try speaking louder or typing it?");
+          return;
+        }
+        
+        // Notify the user what was transcribed
+        await this.bot.sendMessage(chatId, `🎤 *You (Voice):* _"${transcription}"_`, { parse_mode: "Markdown" });
+        
+        // Process as if it were a text message
+        const fakeMsg = { ...msg, text: transcription };
+        await this.handleMessage(fakeMsg);
+      } catch (err) {
+        console.error("Telegram voice transcription error:", err);
+        await this.bot.sendMessage(chatId, "✨ Sorry, I had trouble processing that voice message.");
+      }
     });
   }
 

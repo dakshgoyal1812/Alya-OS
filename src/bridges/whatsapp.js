@@ -11,6 +11,7 @@ import { SERVICE_CONNECT_MESSAGES } from "../core/personality.js";
 import { generateTTS } from "../core/tts.js";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -97,13 +98,34 @@ export class WhatsAppBridge {
     // Strip the "!alya" prefix for processing
     content = content.slice(5).trim();
 
-    // Check if message has a picture attached
+    // Check if message has a media file attached
     if (msg.hasMedia) {
       const media = await msg.downloadMedia();
-      if (media && media.mimetype && media.mimetype.startsWith("image/")) {
-        chat.sendStateTyping(); // Show typing while vision model thinks
-        const description = await this.llm.analyzeImage(media.data, media.mimetype);
-        content = `[User attached an image. Optic Nerve description: ${description}]\n\nUser message: ${content}`;
+      if (media && media.mimetype) {
+        if (media.mimetype.startsWith("image/")) {
+          chat.sendStateTyping(); // Show typing while vision model thinks
+          const description = await this.llm.analyzeImage(media.data, media.mimetype);
+          content = `[User attached an image. Optic Nerve description: ${description}]\n\nUser message: ${content}`;
+        } else if (media.mimetype.startsWith("audio/")) {
+          chat.sendStateTyping();
+          // Write voice message to a temp file
+          const tempDir = join(process.cwd(), "data", "temp");
+          if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+          const tempFilePath = join(tempDir, `wa_voice_${Date.now()}.ogg`);
+          fs.writeFileSync(tempFilePath, Buffer.from(media.data, "base64"));
+          
+          const transcription = await this.llm.transcribeAudio(tempFilePath);
+          if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
+          
+          if (transcription && transcription.trim().length > 0) {
+            content = transcription;
+            // Send back what was heard
+            await chat.sendMessage(`🎤 *You (Voice):* _"${transcription}"_`);
+          } else {
+            await msg.reply("✨ I heard a voice message but couldn't transcribe it.");
+            return;
+          }
+        }
       }
     }
 

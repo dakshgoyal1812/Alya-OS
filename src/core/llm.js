@@ -696,6 +696,24 @@ User Level: ${data.level} (Streak: ${data.streak} Days)`;
       return "I could not process the image clearly due to a system error.";
     }
   }
+
+  async transcribeAudio(filePath) {
+    try {
+      const response = await this.openai.audio.transcriptions.create({
+        file: fs.createReadStream(filePath),
+        model: "whisper-large-v3",
+      });
+      this._resetKeyTracker();
+      return response.text;
+    } catch (error) {
+      if (this._isQuotaError(error) && this._switchToNextKey()) {
+        console.warn(`⚠️ Quota hit during Transcription task. Retrying...`);
+        return await this.transcribeAudio(filePath);
+      }
+      console.error("Groq Whisper transcription error:", error.message);
+      return null;
+    }
+  }
 }
 
 /**
