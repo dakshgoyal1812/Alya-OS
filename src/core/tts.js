@@ -1,10 +1,39 @@
 import fs from "fs";
 import path from "path";
 import { loadConfig } from "./config.js";
+import * as googleTTS from "google-tts-api";
 
 // Global state to track which ElevenLabs key we are currently using
 let currentElevenLabsKeyIndex = 0;
 let triedKeys = new Set();
+
+/**
+ * Generates an MP3 file from text using Google TTS as a fallback.
+ */
+async function generateGoogleTTS(text) {
+  try {
+    const audioItems = await googleTTS.getAllAudioBase64(text, {
+      lang: "en",
+      slow: false,
+      host: "https://translate.google.com",
+      splitPunct: ",.?"
+    });
+    
+    const buffers = audioItems.map(item => Buffer.from(item.base64, "base64"));
+    const finalBuffer = Buffer.concat(buffers);
+    
+    const tempDir = path.join(process.cwd(), "data", "temp");
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+    
+    const filePath = path.join(tempDir, `voice_fallback_${Date.now()}.mp3`);
+    fs.writeFileSync(filePath, finalBuffer);
+    
+    return filePath;
+  } catch (err) {
+    console.error("❌ Google TTS Fallback Generation failed:", err.message);
+    return null;
+  }
+}
 
 /**
  * Generates an MP3 file from text using ElevenLabs API with multi-key failover.
@@ -14,8 +43,8 @@ export async function generateTTS(text, voiceIdOverride = null) {
   const keys = config.elevenlabs?.apiKeys?.filter(k => k && !k.includes("PASTE")) || [];
   
   if (!config.elevenlabs?.enabled || keys.length === 0) {
-    console.warn("⚠️ ElevenLabs is not configured or keys are invalid. Falling back to text.");
-    return null;
+    console.warn("⚠️ ElevenLabs is not configured or keys are invalid. Falling back to Google TTS.");
+    return await generateGoogleTTS(text);
   }
 
   const apiKey = keys[currentElevenLabsKeyIndex];
@@ -68,13 +97,14 @@ export async function generateTTS(text, voiceIdOverride = null) {
         console.warn(`⚠️ ElevenLabs Quota Hit! 🔄 Rotating to Key #${currentElevenLabsKeyIndex + 1} (***${keyPreview})`);
         return await generateTTS(text); // Retry with new key
       } else {
-        console.error("❌ All ElevenLabs API keys have exhausted their 10,000 character limit!");
+        console.error("❌ All ElevenLabs API keys have exhausted their 10,000 character limit! Falling back to Google TTS.");
         triedKeys.clear(); // Reset for next time
-        return null;
+        return await generateGoogleTTS(text);
       }
     }
     
     console.error("❌ TTS Generation failed:", error.message);
-    return null;
+    console.warn("Falling back to Google TTS.");
+    return await generateGoogleTTS(text);
   }
 }
