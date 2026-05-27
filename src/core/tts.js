@@ -12,8 +12,12 @@ let triedKeys = new Set();
  */
 async function generateGoogleTTS(text) {
   try {
+    // Basic language detection: if the text contains Devanagari characters, use Hindi ('hi')
+    const hasHindi = /[\u0900-\u097F]/.test(text);
+    const lang = hasHindi ? "hi" : "en";
+
     const audioItems = await googleTTS.getAllAudioBase64(text, {
-      lang: "en",
+      lang: lang,
       slow: false,
       host: "https://translate.google.com",
       splitPunct: ",.?"
