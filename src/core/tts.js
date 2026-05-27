@@ -15,7 +15,8 @@ async function generateEdgeTTS(text) {
     const tts = new EdgeTTS({
       voice: "hi-IN-SwaraNeural", // Excellent natural voice for both Hindi and English/Hinglish
       lang: "hi-IN",
-      outputFormat: "audio-24khz-48kbitrate-mono-mp3"
+      outputFormat: "audio-24khz-48kbitrate-mono-mp3",
+      rate: "+15%" // Increased speed for a more natural, conversational human pace
     });
     
     const tempDir = path.join(process.cwd(), "data", "temp");
