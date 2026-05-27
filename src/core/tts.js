@@ -1,40 +1,32 @@
 import fs from "fs";
 import path from "path";
 import { loadConfig } from "./config.js";
-import * as googleTTS from "google-tts-api";
+import { EdgeTTS } from "node-edge-tts";
 
 // Global state to track which ElevenLabs key we are currently using
 let currentElevenLabsKeyIndex = 0;
 let triedKeys = new Set();
 
 /**
- * Generates an MP3 file from text using Google TTS as a fallback.
+ * Generates an MP3 file from text using Edge TTS (Neural) as a fallback.
  */
-async function generateGoogleTTS(text) {
+async function generateEdgeTTS(text) {
   try {
-    // Basic language detection: if the text contains Devanagari characters, use Hindi ('hi')
-    const hasHindi = /[\u0900-\u097F]/.test(text);
-    const lang = hasHindi ? "hi" : "en";
-
-    const audioItems = await googleTTS.getAllAudioBase64(text, {
-      lang: lang,
-      slow: false,
-      host: "https://translate.google.com",
-      splitPunct: ",.?"
+    const tts = new EdgeTTS({
+      voice: "hi-IN-SwaraNeural", // Excellent natural voice for both Hindi and English/Hinglish
+      lang: "hi-IN",
+      outputFormat: "audio-24khz-48kbitrate-mono-mp3"
     });
-    
-    const buffers = audioItems.map(item => Buffer.from(item.base64, "base64"));
-    const finalBuffer = Buffer.concat(buffers);
     
     const tempDir = path.join(process.cwd(), "data", "temp");
     if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
     
     const filePath = path.join(tempDir, `voice_fallback_${Date.now()}.mp3`);
-    fs.writeFileSync(filePath, finalBuffer);
+    await tts.ttsPromise(text, filePath);
     
     return filePath;
   } catch (err) {
-    console.error("❌ Google TTS Fallback Generation failed:", err.message);
+    console.error("❌ Edge TTS Fallback Generation failed:", err.message);
     return null;
   }
 }
@@ -47,8 +39,8 @@ export async function generateTTS(text, voiceIdOverride = null) {
   const keys = config.elevenlabs?.apiKeys?.filter(k => k && !k.includes("PASTE")) || [];
   
   if (!config.elevenlabs?.enabled || keys.length === 0) {
-    console.warn("⚠️ ElevenLabs is not configured or keys are invalid. Falling back to Google TTS.");
-    return await generateGoogleTTS(text);
+    console.warn("⚠️ ElevenLabs is not configured or keys are invalid. Falling back to Edge TTS.");
+    return await generateEdgeTTS(text);
   }
 
   const apiKey = keys[currentElevenLabsKeyIndex];
@@ -101,14 +93,14 @@ export async function generateTTS(text, voiceIdOverride = null) {
         console.warn(`⚠️ ElevenLabs Quota Hit! 🔄 Rotating to Key #${currentElevenLabsKeyIndex + 1} (***${keyPreview})`);
         return await generateTTS(text); // Retry with new key
       } else {
-        console.error("❌ All ElevenLabs API keys have exhausted their 10,000 character limit! Falling back to Google TTS.");
+        console.error("❌ All ElevenLabs API keys have exhausted their 10,000 character limit! Falling back to Edge TTS.");
         triedKeys.clear(); // Reset for next time
-        return await generateGoogleTTS(text);
+        return await generateEdgeTTS(text);
       }
     }
     
     console.error("❌ TTS Generation failed:", error.message);
-    console.warn("Falling back to Google TTS.");
-    return await generateGoogleTTS(text);
+    console.warn("Falling back to Edge TTS.");
+    return await generateEdgeTTS(text);
   }
 }
