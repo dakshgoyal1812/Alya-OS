@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { LLMEngine } from "./llm.js";
 import { getHistory, addMessage } from "./memory.js";
+import { SelfEvolutionEngine } from "./self_evolution.js";
 
 const AUTOMATION_FILE = path.join(process.cwd(), "data", "automations.json");
 
@@ -22,6 +23,18 @@ let llmInstance = null;
  */
 export function startCronJobs(bridges) {
   llmInstance = new LLMEngine();
+  
+  // Schedule Alya's Daily Self-Evolution Cycle at midnight
+  const evolution = new SelfEvolutionEngine();
+  cron.schedule("0 0 * * *", async () => {
+    try {
+      console.log("🧬 [Self-Evolution] Initiating scheduled evolution cycle...");
+      await evolution.runEvolution();
+    } catch (err) {
+      console.error("❌ [Self-Evolution] Scheduled cycle crashed:", err.message);
+    }
+  });
+  console.log("🧬 [Self-Evolution] Scheduled daily self-evolution loop at midnight.");
   
   const automations = JSON.parse(fs.readFileSync(AUTOMATION_FILE, "utf-8"));
   console.log(`\n⚙️  Workflow Automation: Starting ${automations.length} background jobs...`);
