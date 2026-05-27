@@ -264,19 +264,99 @@
           <div class="workspace-wrapper" id="workspace-wrapper">
             <!-- Left Side: Chat Panel -->
             <div class="workspace-chat">
-              <!-- Hologram Avatar Visualizer -->
+              <!-- Redesigned Video-Call Dashboard Interface -->
               <div class="hologram-container">
                 <div class="hologram-avatar" id="hologram-avatar">
-                  <div class="hologram-ring ring1"></div>
-                  <div class="hologram-ring ring2"></div>
-                  <div class="hologram-ring ring3"></div>
-                  <div class="hologram-core"></div>
-                  <svg class="hologram-face" viewBox="0 0 100 100">
-                    <circle cx="35" cy="45" r="5" fill="#06b6d4" id="eye-left" />
-                    <circle cx="65" cy="45" r="5" fill="#06b6d4" id="eye-right" />
-                    <path d="M 35 65 Q 50 65 65 65" stroke="#06b6d4" stroke-width="4" stroke-linecap="round" fill="none" id="mouth-line" />
-                  </svg>
+                  <div class="video-call-frame">
+                    <!-- Base Avatar Image -->
+                    <img src="alya.png" class="avatar-image-base" alt="Alya" />
+                    
+                    <!-- Blinking Eyelid Overlays -->
+                    <div class="eyelid-overlay eye-left-lid"></div>
+                    <div class="eyelid-overlay eye-right-lid"></div>
+                    
+                    <!-- Vector Mouth Overlay -->
+                    <div class="mouth-overlay">
+                      <svg viewBox="0 0 100 100" class="talking-mouth-svg" width="100%" height="100%">
+                        <defs>
+                          <radialGradient id="skin-gradient" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#fdece7" stop-opacity="1" />
+                            <stop offset="70%" stop-color="#fdece7" stop-opacity="0.9" />
+                            <stop offset="100%" stop-color="#fdece7" stop-opacity="0" />
+                          </radialGradient>
+                        </defs>
+                        <!-- Cover original mouth -->
+                        <ellipse cx="50" cy="50" rx="42" ry="32" fill="url(#skin-gradient)" />
+                        <!-- Mouth inner cavity -->
+                        <path id="mouth-cavity" d="M 32 50 Q 50 53 68 50 Z" fill="none" />
+                        <!-- Tongue -->
+                        <path id="mouth-tongue" d="M 36 50 Q 50 50 64 50 Z" fill="#e06b74" />
+                        <!-- Teeth -->
+                        <path id="mouth-teeth" d="M 34 50 Q 50 50 66 50" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" fill="none" />
+                        <!-- Lips outline -->
+                        <path id="mouth-lips" d="M 32 50 Q 50 53 68 50" fill="none" stroke="#d56c7c" stroke-width="3" stroke-linecap="round" />
+                      </svg>
+                    </div>
+
+                    <!-- Cyber Filters (visible in thinking state) -->
+                    <div class="video-scanlines"></div>
+                    <div class="video-glitch-overlay"></div>
+                    <div class="listening-glow-ring"></div>
+
+                    <!-- Call HUD overlays -->
+                    <div class="hud-top-left">
+                      <span class="live-indicator-dot"></span>
+                      <span class="live-label">LIVE CALL</span>
+                      <span class="call-duration-timer" id="call-duration-timer">00:00</span>
+                    </div>
+                    <div class="hud-top-right">
+                      <span class="hud-spec-pill">1080P HD</span>
+                      <span class="hud-spec-pill fps">60 FPS</span>
+                    </div>
+
+                    <!-- Captions Overlay -->
+                    <div class="hud-captions-overlay" id="hud-captions-overlay" style="opacity: 0; pointer-events: none;">
+                      <span class="captions-text" id="captions-text">Call connected.</span>
+                    </div>
+
+                    <!-- User Picture-in-Picture window -->
+                    <div class="user-pip-window" id="user-pip-window">
+                      <video class="user-pip-video" id="user-pip-video" autoplay playsinline muted></video>
+                      <div class="user-pip-fallback" id="user-pip-fallback">
+                        <div class="fallback-avatar">👤</div>
+                        <span class="fallback-text">You</span>
+                      </div>
+                      <div class="pip-tag">
+                        <span class="pip-icon-dot"></span>
+                        <span>Camera</span>
+                      </div>
+                    </div>
+
+                    <!-- Floating Control Bar -->
+                    <div class="video-call-controls">
+                      <button class="control-btn" id="btn-call-mute" title="Mute Microphone">
+                        <span class="btn-icon">🎙️</span>
+                      </button>
+                      <button class="control-btn" id="btn-call-video" title="Toggle Camera">
+                        <span class="btn-icon">📹</span>
+                      </button>
+                      <button class="control-btn" id="btn-call-screen" title="Share Screen">
+                        <span class="btn-icon">🖥️</span>
+                      </button>
+                      <button class="control-btn hangup" id="btn-call-hangup" title="End Call">
+                        <span class="btn-icon">📞</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
+                
+                <!-- Hidden dummy SVG nodes to prevent third-party or legacy JS script errors -->
+                <svg width="0" height="0" style="position: absolute; pointer-events: none; opacity: 0;">
+                  <circle cx="35" cy="45" r="5" id="eye-left" />
+                  <circle cx="65" cy="45" r="5" id="eye-right" />
+                  <path d="M 35 65 Q 50 65 65 65" id="mouth-line" />
+                </svg>
+                
                 <div class="hologram-status-text" id="hologram-status">System AI: Idle</div>
               </div>
 

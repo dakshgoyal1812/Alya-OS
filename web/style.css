@@ -1339,96 +1339,471 @@ html, body {
   display: flex;
 }
 
-/* --- Hologram Avatar styles --- */
+/* --- Video Call & Avatar styles (Replaces Hologram) --- */
 .hologram-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 20px 0 10px 0;
-  background: linear-gradient(180deg, rgba(6, 182, 212, 0.02) 0%, transparent 100%);
-  border-bottom: 1px solid rgba(6, 182, 212, 0.05);
+  width: calc(100% - 24px);
+  margin: 14px auto;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: rgba(10, 17, 34, 0.6);
+  border: 1px solid rgba(6, 182, 212, 0.15);
+  box-shadow: 0 12px 32px 0 rgba(0, 0, 0, 0.5), inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hologram-container:hover {
+  border-color: rgba(6, 182, 212, 0.35);
+  box-shadow: 0 16px 40px 0 rgba(6, 182, 212, 0.08), 0 12px 32px 0 rgba(0, 0, 0, 0.6);
 }
 
 .hologram-avatar {
   position: relative;
-  width: 90px;
-  height: 90px;
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.hologram-ring {
+.video-call-frame {
   position: absolute;
-  border-radius: 50%;
-  border: 1px solid rgba(6, 182, 212, 0.3);
-  box-shadow: 0 0 15px rgba(6, 182, 212, 0.1);
-}
-
-.ring1 {
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  border-style: dashed;
-  animation: spinClockwise 12s linear infinite;
+  background: #060913;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.ring2 {
-  width: 80%;
-  height: 80%;
-  border-color: rgba(34, 211, 238, 0.4);
-  animation: spinCounterClockwise 8s linear infinite;
+/* Base Avatar Image with smooth breathing */
+.avatar-image-base {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform-origin: center;
+  transition: filter 0.5s ease;
+  animation: avatarBreathing 6s ease-in-out infinite;
 }
 
-.ring3 {
-  width: 60%;
-  height: 60%;
-  border-style: dotted;
-  border-color: rgba(6, 182, 212, 0.6);
-  animation: spinClockwise 6s linear infinite;
+/* Animations based on state classes added to .hologram-avatar */
+.hologram-avatar.thinking .avatar-image-base {
+  filter: saturate(0.4) brightness(0.8) contrast(1.1);
+  animation: avatarBreathing 1.5s ease-in-out infinite alternate, imageGlitch 0.3s infinite steps(2);
 }
 
-.hologram-core {
+.hologram-avatar.listening .avatar-image-base {
+  filter: saturate(1.1) brightness(1.05);
+}
+
+.hologram-avatar.talking .avatar-image-base {
+  animation: avatarBreathing 3s ease-in-out infinite alternate;
+}
+
+/* Eyelid Overlays for Blinking */
+.eyelid-overlay {
   position: absolute;
-  width: 40%;
-  height: 40%;
-  background: radial-gradient(circle, rgba(6, 182, 212, 0.8) 0%, rgba(8, 145, 178, 0.2) 70%);
-  border-radius: 50%;
-  filter: blur(2px);
-  animation: corePulse 2s ease-in-out infinite alternate;
+  background: linear-gradient(to bottom, #fde9e3 70%, #dca39a 100%);
+  border-radius: 50% 50% 0 0;
+  transform-origin: top center;
+  z-index: 4;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
 }
 
-.hologram-face {
+.eye-left-lid {
+  left: 59.8%;
+  top: 39%;
+  width: 5.6%;
+  height: 6%;
+  --rot: -8deg;
+  transform: scaleY(0) rotate(var(--rot));
+  animation: blinkInterval 4.8s infinite;
+}
+
+.eye-right-lid {
+  left: 73.8%;
+  top: 49.5%;
+  width: 5.8%;
+  height: 6.5%;
+  --rot: -13deg;
+  transform: scaleY(0) rotate(var(--rot));
+  animation: blinkInterval 4.8s infinite;
+  animation-delay: 0.1s;
+}
+
+/* Mouth Overlay Container */
+.mouth-overlay {
   position: absolute;
-  width: 50%;
-  height: 50%;
+  left: 65.1%;
+  top: 64.5%;
+  width: 4.8%;
+  height: 4.6%;
   z-index: 5;
+  pointer-events: none;
+}
+
+/* Video Scanlines Overlay (active in thinking/robot mode) */
+.video-scanlines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.25) 50%
+  );
+  background-size: 100% 4px;
+  z-index: 6;
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+.hologram-avatar.thinking .video-scanlines {
+  opacity: 0.8;
+  animation: scanlineScan 8s linear infinite;
+}
+
+/* Matrix laser scan line */
+.video-glitch-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, transparent 0%, rgba(6, 182, 212, 0.2) 50%, transparent 51%);
+  background-size: 100% 200px;
+  z-index: 7;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.hologram-avatar.thinking .video-glitch-overlay {
+  opacity: 1;
+  animation: matrixScan 3s linear infinite;
+}
+
+/* Listening glow ripples */
+.listening-glow-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0px solid rgba(6, 182, 212, 0);
+  box-shadow: inset 0 0 0px rgba(6, 182, 212, 0);
+  z-index: 8;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.hologram-avatar.listening .listening-glow-ring {
+  border: 1.5px solid rgba(6, 182, 212, 0.4);
+  box-shadow: inset 0 0 25px rgba(6, 182, 212, 0.25);
+  animation: pulseGlowRing 2s infinite alternate;
+}
+
+/* HUD elements */
+.hud-top-left {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(10, 15, 30, 0.7);
+  backdrop-filter: blur(4px);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  z-index: 9;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  color: var(--accent-300);
+}
+
+.live-indicator-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  animation: pulseRedDot 1.2s infinite;
+}
+
+.hologram-avatar.listening .live-indicator-dot {
+  background-color: #10b981;
+}
+
+.hud-top-right {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 4px;
+  z-index: 9;
+}
+
+.hud-spec-pill {
+  background: rgba(10, 15, 30, 0.7);
+  backdrop-filter: blur(4px);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
+
+.hud-spec-pill.fps {
+  color: #10b981;
+}
+
+/* Captions block overlay */
+.hud-captions-overlay {
+  position: absolute;
+  bottom: 45px;
+  left: 12px;
+  right: 12px;
+  background: rgba(8, 14, 27, 0.8);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(6, 182, 212, 0.15);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  z-index: 9;
+  text-align: center;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  transform: translateY(0);
+}
+
+.captions-text {
+  font-size: 0.7rem;
+  color: var(--accent-200);
+  line-height: 1.3;
+  display: block;
+}
+
+/* User Picture in Picture (PiP) Window */
+.user-pip-window {
+  position: absolute;
+  top: 40px;
+  right: 10px;
+  width: 70px;
+  height: 95px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  background: #030712;
+  overflow: hidden;
+  z-index: 9;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+}
+
+.user-pip-window:hover {
+  width: 90px;
+  height: 120px;
+  border-color: var(--accent-400);
+}
+
+.user-pip-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+
+.user-pip-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  gap: 4px;
+}
+
+.fallback-avatar {
+  font-size: 1.2rem;
+}
+
+.fallback-text {
+  font-size: 0.55rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+
+.pip-tag {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  background: rgba(0,0,0,0.6);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.48rem;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--font-mono);
+}
+
+.pip-icon-dot {
+  width: 4px;
+  height: 4px;
+  background: #ef4444;
+  border-radius: 50%;
+}
+
+.user-pip-window.camera-on .user-pip-video {
+  display: block;
+}
+
+.user-pip-window.camera-on .user-pip-fallback {
+  display: none;
+}
+
+.user-pip-window.camera-on .pip-icon-dot {
+  background: #10b981;
+  animation: pulseGreenDot 1.2s infinite;
+}
+
+/* Interactive control buttons */
+.video-call-controls {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translate(-50%, 0) scale(0.95);
+  display: flex;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  padding: 6px 12px;
+  border-radius: 30px;
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  z-index: 10;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+
+.video-call-frame:hover .video-call-controls {
+  bottom: 8px;
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.control-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(30, 41, 59, 0.6);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.75rem;
+  padding: 0;
+}
+
+.control-btn:hover {
+  background: rgba(6, 182, 212, 0.25);
+  border-color: rgba(6, 182, 212, 0.4);
+  transform: translateY(-2px);
+}
+
+.control-btn.active {
+  background: var(--accent-600);
+  border-color: var(--accent-400);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+}
+
+.control-btn.hangup {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
+
+.control-btn.hangup:hover {
+  background: rgba(239, 68, 68, 0.8);
+  border-color: #ef4444;
+  color: #fff;
 }
 
 .hologram-status-text {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-family: var(--font-mono);
   color: var(--accent-400);
-  margin-top: 10px;
+  margin-top: 6px;
+  margin-bottom: 6px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   text-shadow: 0 0 8px rgba(6, 182, 212, 0.4);
 }
 
-/* Animations for Hologram */
-@keyframes spinClockwise {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+/* Keyframes for video interface animations */
+@keyframes avatarBreathing {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.02) translateY(-3px); }
 }
 
-@keyframes spinCounterClockwise {
-  from { transform: rotate(360deg); }
-  to { transform: rotate(0deg); }
+@keyframes blinkInterval {
+  0%, 95%, 100% {
+    transform: scaleY(0) rotate(var(--rot));
+    opacity: 0;
+  }
+  96%, 98% {
+    transform: scaleY(1.15) rotate(var(--rot));
+    opacity: 1;
+  }
 }
 
-@keyframes corePulse {
-  0% { transform: scale(0.9); opacity: 0.7; box-shadow: 0 0 10px rgba(6, 182, 212, 0.4); }
-  100% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 25px rgba(6, 182, 212, 0.8); }
+@keyframes pulseRedDot {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; box-shadow: 0 0 6px #ef4444; }
+}
+
+@keyframes pulseGreenDot {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; box-shadow: 0 0 6px #10b981; }
+}
+
+@keyframes pulseGlowRing {
+  0% { box-shadow: inset 0 0 10px rgba(6, 182, 212, 0.15); border-color: rgba(6, 182, 212, 0.2); }
+  100% { box-shadow: inset 0 0 35px rgba(6, 182, 212, 0.4); border-color: rgba(6, 182, 212, 0.6); }
+}
+
+@keyframes scanlineScan {
+  from { background-position: 0 0; }
+  to { background-position: 0 100%; }
+}
+
+@keyframes matrixScan {
+  0% { background-position: 0 -200px; }
+  100% { background-position: 0 400px; }
+}
+
+@keyframes imageGlitch {
+  0% { transform: translate(1px, 1px) skew(1deg); }
+  20% { transform: translate(-1px, -1px) skew(-1deg); }
+  40% { transform: translate(0px, 1px) skew(0); }
+  60% { transform: translate(1px, -1px) skew(-1deg); }
+  80% { transform: translate(-1px, 1px) skew(1deg); }
+  100% { transform: translate(0px, 0px) skew(0); }
 }
 
 /* --- Cognitive Graph Pane --- */
@@ -1937,22 +2312,21 @@ html, body {
   .automation-creator {
     width: 100% !important;
   }
-  
-  /* Reduce hologram size for mobile to fit chat */
-  .hologram-container {
-    padding: 10px 0 5px 0 !important;
-  }
-  .hologram-avatar {
-    width: 60px !important;
-    height: 60px !important;
-  }
-  .hologram-status-text {
-    font-size: 0.6rem !important;
-    margin-top: 5px !important;
-  }
 }
 
 @media (max-width: 768px) {
+  .hologram-container {
+    width: calc(100% - 16px) !important;
+    margin: 8px auto !important;
+  }
+  .hologram-avatar {
+    height: 160px !important;
+  }
+  .hologram-status-text {
+    font-size: 0.6rem !important;
+    margin-top: 4px !important;
+    margin-bottom: 4px !important;
+  }
   /* Disable heavy background bubble/wave animations on mobile/tablet */
   .bubble, .wave {
     animation: none !important;
@@ -2825,6 +3199,16 @@ body.theme-sakura {
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+.btn-send:disabled {
+  background: #1e293b !important;
+  color: #64748b !important;
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 
 
 

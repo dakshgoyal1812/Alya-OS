@@ -199,9 +199,12 @@
     if (typeof voiceOrbController !== "undefined" && voiceOrbController.active) {
       voiceOrbController.setState("speaking", "Alya speaking...");
     }
+    setHologramState("talking");
     currentAudio.play().catch(e => console.error("Audio playback failed:", e));
     
     currentAudio.onended = () => {
+      setHologramState("idle");
+      hideCaptionsDelayed();
       if (typeof voiceOrbController !== "undefined" && voiceOrbController.active) {
         voiceOrbController.setState("idle");
       }
@@ -909,12 +912,16 @@
       if (voice) utterance.voice = voice;
 
       utterance.onstart = () => {
+        setHologramState("talking");
+        displayCaptions(cleanText);
         if (typeof voiceOrbController !== "undefined" && voiceOrbController.active) {
           voiceOrbController.setState("speaking", cleanText);
         }
       };
 
       utterance.onend = () => {
+        setHologramState("idle");
+        hideCaptionsDelayed();
         if (typeof voiceOrbController !== "undefined" && voiceOrbController.active) {
           voiceOrbController.setState("idle");
         }
@@ -1060,28 +1067,291 @@
   }
 
   // ============================================================
-  // ✨ HOLOGRAM AVATAR STATE ENGINE
+  // ============================================================
+  // ✨ HOLOGRAM AVATAR STATE ENGINE (Redesigned as Video Call System)
   // ============================================================
   const hologramStatusText = document.getElementById("hologram-status");
+  const hologramAvatar = document.getElementById("hologram-avatar");
   const eyeLeft = document.getElementById("eye-left");
   const eyeRight = document.getElementById("eye-right");
   const mouthLine = document.getElementById("mouth-line");
-  const hologramAvatar = document.getElementById("hologram-avatar");
 
+  // Video-Call Elements
+  const mouthCavity = document.getElementById("mouth-cavity");
+  const mouthTongue = document.getElementById("mouth-tongue");
+  const mouthTeeth = document.getElementById("mouth-teeth");
+  const mouthLips = document.getElementById("mouth-lips");
+  const hudCaptionsOverlay = document.getElementById("hud-captions-overlay");
+  const captionsText = document.getElementById("captions-text");
+  
+  const btnCallMute = document.getElementById("btn-call-mute");
+  const btnCallVideo = document.getElementById("btn-call-video");
+  const btnCallScreen = document.getElementById("btn-call-screen");
+  const btnCallHangup = document.getElementById("btn-call-hangup");
+  const pipVideo = document.getElementById("user-pip-video");
+  const pipWindow = document.getElementById("user-pip-window");
+
+  let isWebcamActive = false;
+  let isScreenActive = false;
+  let webcamStream = null;
+  let screenStream = null;
+  let callMuted = false;
+  let callActive = true;
+  let callDuration = 0;
+  let callTimerId = null;
+  let captionsTimeout = null;
+
+  // Real-time SVG Mouth Morphing for Lip-Sync
+  function updateMouthPaths(amp) {
+    if (!mouthCavity || !mouthLips) return;
+
+    if (amp <= 0.05) {
+      // Closed Mouth (cute small line matching avatar)
+      mouthCavity.setAttribute("d", "M 32 50 Q 50 53 68 50 Z");
+      mouthCavity.setAttribute("fill", "none");
+      mouthLips.setAttribute("d", "M 32 50 Q 50 53 68 50");
+      if (mouthTongue) {
+        mouthTongue.setAttribute("d", "M 36 50 Q 50 50 64 50 Z");
+        mouthTongue.style.display = "none";
+      }
+      if (mouthTeeth) {
+        mouthTeeth.setAttribute("d", "M 34 50 Q 50 50 66 50");
+        mouthTeeth.style.display = "none";
+      }
+    } else {
+      // Open Mouth
+      const topY = 50 - amp * 6;
+      const bottomY = 50 + amp * 18;
+      const leftX = 32 - amp * 25 * 0.1;
+      const rightX = 68 + amp * 25 * 0.1;
+
+      // Inner cavity
+      mouthCavity.setAttribute("d", `M ${leftX} 50 Q 50 ${topY} ${rightX} 50 Q 50 ${bottomY} ${leftX} 50 Z`);
+      mouthCavity.setAttribute("fill", "#7a1f2d");
+
+      // Lips outline
+      mouthLips.setAttribute("d", `M ${leftX} 50 Q 50 ${topY} ${rightX} 50 Q 50 ${bottomY} ${leftX} 50 Z`);
+
+      // Teeth shape at the top
+      if (mouthTeeth) {
+        const teethY = topY + 1.8;
+        mouthTeeth.setAttribute("d", `M ${leftX + 2} ${teethY} Q 50 ${teethY + 2 + amp * 2} ${rightX - 2} ${teethY}`);
+        mouthTeeth.style.display = "block";
+      }
+
+      // Tongue shape at the bottom
+      if (mouthTongue) {
+        const tongueTopY = bottomY - 3 - amp * 3;
+        mouthTongue.setAttribute("d", `M ${leftX + 3} ${tongueTopY} Q 50 ${tongueTopY - 2} ${rightX - 3} ${tongueTopY} Q 50 ${bottomY - 1} ${leftX + 3} ${tongueTopY} Z`);
+        mouthTongue.style.display = "block";
+      }
+    }
+  }
+
+  // Floating Captions/Subtitles
+  function displayCaptions(text) {
+    if (!hudCaptionsOverlay || !captionsText) return;
+    if (captionsTimeout) clearTimeout(captionsTimeout);
+    
+    // Clean text from markdown tags
+    const cleanText = text
+      .replace(/<[^>]+>/g, '')
+      .replace(/[*_~`#]/g, '')
+      .trim();
+
+    if (!cleanText) {
+      hudCaptionsOverlay.style.opacity = "0";
+      return;
+    }
+
+    captionsText.textContent = cleanText;
+    hudCaptionsOverlay.style.opacity = "1";
+  }
+
+  function hideCaptionsDelayed() {
+    if (captionsTimeout) clearTimeout(captionsTimeout);
+    captionsTimeout = setTimeout(() => {
+      if (hudCaptionsOverlay) hudCaptionsOverlay.style.opacity = "0";
+    }, 4500);
+  }
+
+  // Call Duration Timer
+  function startCallTimer() {
+    if (callTimerId) clearInterval(callTimerId);
+    callDuration = 0;
+    const timerEl = document.getElementById("call-duration-timer");
+    if (!timerEl) return;
+    timerEl.textContent = "00:00";
+    callTimerId = setInterval(() => {
+      callDuration++;
+      const mins = String(Math.floor(callDuration / 60)).padStart(2, "0");
+      const secs = String(callDuration % 60).padStart(2, "0");
+      timerEl.textContent = `${mins}:${secs}`;
+    }, 1000);
+  }
+
+  function stopCallTimer() {
+    if (callTimerId) {
+      clearInterval(callTimerId);
+      callTimerId = null;
+    }
+  }
+
+  // User Webcam (PiP) Stream
+  async function startWebcam() {
+    try {
+      if (isScreenActive) stopScreenShare();
+      
+      const constraints = { video: { width: { ideal: 160 }, height: { ideal: 120 } } };
+      webcamStream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (pipVideo) {
+        pipVideo.srcObject = webcamStream;
+        pipVideo.onloadedmetadata = () => pipVideo.play();
+      }
+      isWebcamActive = true;
+      if (btnCallVideo) btnCallVideo.classList.add("active");
+      if (pipWindow) pipWindow.classList.add("camera-on");
+      displayCaptions("Camera feed activated");
+      hideCaptionsDelayed();
+    } catch (e) {
+      console.warn("Could not start camera feed:", e);
+      displayCaptions("Camera access blocked by user/OS");
+      hideCaptionsDelayed();
+    }
+  }
+
+  function stopWebcam() {
+    if (webcamStream) {
+      webcamStream.getTracks().forEach(track => track.stop());
+      webcamStream = null;
+    }
+    isWebcamActive = false;
+    if (btnCallVideo) btnCallVideo.classList.remove("active");
+    if (pipWindow) pipWindow.classList.remove("camera-on");
+    if (pipVideo) pipVideo.srcObject = null;
+  }
+
+  // Screen Share Stream
+  async function startScreenShare() {
+    try {
+      if (isWebcamActive) stopWebcam();
+
+      screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      if (pipVideo) {
+        pipVideo.srcObject = screenStream;
+        pipVideo.onloadedmetadata = () => pipVideo.play();
+      }
+      isScreenActive = true;
+      if (btnCallScreen) btnCallScreen.classList.add("active");
+      if (pipWindow) pipWindow.classList.add("camera-on");
+      
+      // Auto shutdown screenshare when user stops sharing via browser bar
+      screenStream.getVideoTracks()[0].onended = () => {
+        stopScreenShare();
+      };
+      
+      displayCaptions("Sharing screen stream...");
+      hideCaptionsDelayed();
+    } catch (e) {
+      console.warn("Could not start screen sharing:", e);
+    }
+  }
+
+  function stopScreenShare() {
+    if (screenStream) {
+      screenStream.getTracks().forEach(track => track.stop());
+      screenStream = null;
+    }
+    isScreenActive = false;
+    if (btnCallScreen) btnCallScreen.classList.remove("active");
+    if (pipWindow) pipWindow.classList.remove("camera-on");
+    if (pipVideo) pipVideo.srcObject = null;
+  }
+
+  // Bind Buttons
+  if (btnCallMute) {
+    btnCallMute.addEventListener("click", () => {
+      callMuted = !callMuted;
+      btnCallMute.classList.toggle("active", callMuted);
+      btnCallMute.title = callMuted ? "Unmute Microphone" : "Mute Microphone";
+      btnCallMute.innerHTML = callMuted ? '<span class="btn-icon">🔇</span>' : '<span class="btn-icon">🎙️</span>';
+      
+      // Attempt mute/unmute visualizer stream
+      if (micStreamForVisualizer) {
+        micStreamForVisualizer.getAudioTracks().forEach(t => t.enabled = !callMuted);
+      }
+      displayCaptions(callMuted ? "Microphone muted" : "Microphone unmuted");
+      hideCaptionsDelayed();
+    });
+  }
+
+  if (btnCallVideo) {
+    btnCallVideo.addEventListener("click", async () => {
+      if (isWebcamActive) {
+        stopWebcam();
+      } else {
+        await startWebcam();
+      }
+    });
+  }
+
+  if (btnCallScreen) {
+    btnCallScreen.addEventListener("click", async () => {
+      if (isScreenActive) {
+        stopScreenShare();
+      } else {
+        await startScreenShare();
+      }
+    });
+  }
+
+  if (btnCallHangup) {
+    btnCallHangup.addEventListener("click", () => {
+      if (callActive) {
+        // Hang Up Call
+        callActive = false;
+        btnCallHangup.classList.add("active");
+        btnCallHangup.title = "Reconnect Call";
+        btnCallHangup.innerHTML = '<span class="btn-icon">🔄</span>';
+        stopWebcam();
+        stopScreenShare();
+        stopCallTimer();
+        setHologramState("idle");
+        displayCaptions("Call disconnected");
+        if (hologramStatusText) hologramStatusText.textContent = "System AI: Offline";
+      } else {
+        // Re-establish Call
+        callActive = true;
+        btnCallHangup.classList.remove("active");
+        btnCallHangup.title = "End Call";
+        btnCallHangup.innerHTML = '<span class="btn-icon">📞</span>';
+        startCallTimer();
+        displayCaptions("Call reconnected");
+        hideCaptionsDelayed();
+        setHologramState("idle");
+      }
+    });
+  }
+
+  // State Engine Switcher
   function setHologramState(state) {
     if (!hologramStatusText) return;
-    hologramStatusText.textContent = `System AI: ${state}`;
+    if (callActive) {
+      hologramStatusText.textContent = `System AI: ${state}`;
+    }
     
-    // Reset classes
+    // Set class on avatar frame
     if (hologramAvatar) {
       hologramAvatar.className = "hologram-avatar";
       hologramAvatar.classList.add(state);
     }
     
+    // Standard dummy logic compatibility
     if (state === "thinking") {
       if (eyeLeft) eyeLeft.setAttribute("r", "7");
       if (eyeRight) eyeRight.setAttribute("r", "7");
-      if (mouthLine) mouthLine.setAttribute("d", "M 30 60 Q 50 50 70 60"); 
+      if (mouthLine) mouthLine.setAttribute("d", "M 30 60 Q 50 50 70 60");
+      updateMouthPaths(0);
     } else if (state === "talking") {
       if (eyeLeft) eyeLeft.setAttribute("r", "5");
       if (eyeRight) eyeRight.setAttribute("r", "5");
@@ -1089,11 +1359,13 @@
     } else if (state === "listening") {
       if (eyeLeft) eyeLeft.setAttribute("r", "8");
       if (eyeRight) eyeRight.setAttribute("r", "8");
-      if (mouthLine) mouthLine.setAttribute("d", "M 35 60 Q 50 75 65 60"); 
+      if (mouthLine) mouthLine.setAttribute("d", "M 35 60 Q 50 75 65 60");
+      updateMouthPaths(0);
     } else { // idle
       if (eyeLeft) eyeLeft.setAttribute("r", "5");
       if (eyeRight) eyeRight.setAttribute("r", "5");
-      if (mouthLine) mouthLine.setAttribute("d", "M 35 65 Q 50 65 65 65"); 
+      if (mouthLine) mouthLine.setAttribute("d", "M 35 65 Q 50 65 65 65");
+      updateMouthPaths(0);
     }
   }
 
@@ -1102,30 +1374,57 @@
     if (mouthAnimationId) cancelAnimationFrame(mouthAnimationId);
     
     let tick = 0;
+    let pauseTimer = 0;
+    let currentAmp = 0;
+    
     function draw() {
-      if (!hologramAvatar || !hologramAvatar.classList.contains("talking")) return;
-      tick += 0.25;
-      const height = 65 + Math.sin(tick) * 8;
-      if (mouthLine) {
-        mouthLine.setAttribute("d", `M 35 65 Q 50 ${height} 65 65`);
+      if (!hologramAvatar || !hologramAvatar.classList.contains("talking")) {
+        updateMouthPaths(0);
+        return;
       }
+      
+      tick += 0.25;
+      pauseTimer += 0.016; // Increments at ~60fps
+      
+      let targetAmp = 0;
+      
+      // Pause mouth movement every 1.6 seconds for 0.25s (speech rhythm simulation)
+      const cycleTime = pauseTimer % 1.6;
+      if (cycleTime > 1.35) {
+        targetAmp = 0;
+      } else {
+        // Natural vowel cadence oscillation
+        targetAmp = Math.abs(Math.sin(tick * 0.38)) * (0.35 + Math.random() * 0.65);
+      }
+      
+      // Smooth interpolation for fluid lip movements
+      currentAmp += (targetAmp - currentAmp) * 0.28;
+      
+      updateMouthPaths(currentAmp);
       mouthAnimationId = requestAnimationFrame(draw);
     }
     draw();
   }
 
-  // Hook voice recorder states to hologram
+  // Hook voice recorder states to new video-call system
   const origStartListening = startListening;
   startListening = async function() {
     await origStartListening();
     setHologramState("listening");
+    displayCaptions("Listening...");
   };
 
   const origStopListening = stopListening;
   stopListening = function() {
     origStopListening();
     setHologramState("idle");
+    displayCaptions("");
   };
+
+  // Launch initial systems
+  window.displayCaptions = displayCaptions;
+  window.hideCaptionsDelayed = hideCaptionsDelayed;
+  startCallTimer();
 
   // ============================================================
   // 🧬 3D NEURAL COGNITIVE SPACE MIND-MAP UNIVERSE
