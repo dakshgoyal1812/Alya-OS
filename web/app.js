@@ -962,12 +962,31 @@
         if (valEl) valEl.textContent = health.groqApi ? "Connected" : "Offline";
       }
 
+      // Update Gemini API status
+      const geminiEl = document.getElementById("status-gemini");
+      if (geminiEl) {
+        const dotEl = geminiEl.querySelector(".status-dot");
+        const valEl = geminiEl.querySelector(".status-value");
+        if (dotEl) dotEl.className = `status-dot ${health.geminiApi ? "online" : "offline"}`;
+        if (valEl) valEl.textContent = health.geminiApi ? "Connected" : "Offline";
+      }
+
+      // Update OpenRouter status
+      const openrouterEl = document.getElementById("status-openrouter");
+      if (openrouterEl) {
+        const dotEl = openrouterEl.querySelector(".status-dot");
+        const valEl = openrouterEl.querySelector(".status-value");
+        if (dotEl) dotEl.className = `status-dot ${health.openrouterApi ? "online" : "offline"}`;
+        if (valEl) valEl.textContent = health.openrouterApi ? "Connected" : "Offline";
+      }
+
       // Update model
       const modelEl = document.getElementById("status-model");
       if (modelEl) {
         const modelDot = modelEl.querySelector(".status-dot");
         const modelVal = modelEl.querySelector(".status-value");
-        if (modelDot) modelDot.className = `status-dot ${health.groqApi ? "online" : "offline"}`;
+        const anyOnline = health.groqApi || health.geminiApi || health.openrouterApi;
+        if (modelDot) modelDot.className = `status-dot ${anyOnline ? "online" : "offline"}`;
         if (modelVal) modelVal.textContent = health.model || "—";
       }
     }

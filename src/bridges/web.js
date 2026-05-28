@@ -89,10 +89,14 @@ export class WebBridge {
     // API: Health check
     this.app.get("/api/health", async (req, res) => {
       const groqOk = await this.llm.isAvailable();
+      const geminiOk = this.llm.router.config.google?.apiKey && !this.llm.router.config.google.apiKey.startsWith("PASTE") ? true : false;
+      const openrouterOk = this.llm.router.config.openrouter?.apiKey && !this.llm.router.config.openrouter.apiKey.startsWith("PASTE") ? true : false;
       const models = groqOk ? await this.llm.listModels() : [];
       res.json({
         status: "ok",
         groqApi: groqOk,
+        geminiApi: geminiOk,
+        openrouterApi: openrouterOk,
         model: this.llm.model,
         availableModels: models.map((m) => m.name),
         uptime: process.uptime(),

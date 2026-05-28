@@ -284,7 +284,7 @@ export class LLMEngine {
   }
 
   async listModels() {
-    return [{name: "llama-3.3-70b-versatile"}, {name: "llama-3.1-8b-instant"}];
+    return Object.values(MODEL_DIRECTORY).map(m => ({ name: m.name }));
   }
 
   _getSystemPromptText() {
