@@ -3209,6 +3209,27 @@ body.theme-sakura {
   box-shadow: none !important;
 }
 
+/* ============================================================ */
+/* ✨ CLEAN UI OVERRIDES                                        */
+/* ============================================================ */
+
+/* Hide video call hologram and tab navigation switcher */
+.hologram-container,
+.header-tabs {
+  display: none !important;
+}
+
+/* Hide advanced selectors and checkboxes to keep the header minimal */
+.control-select-group:has(#select-cognitive-state),
+.control-select-group:has(#select-thinking),
+.control-select-group:has(#select-routing),
+.control-checkbox-group,
+#btn-toggle-workspace,
+#btn-trigger-orb {
+  display: none !important;
+}
+
+
 
 
 
