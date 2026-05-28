@@ -6,11 +6,7 @@
 import { loadConfig } from "./core/config.js";
 import { LLMEngine } from "./core/llm.js";
 import { ALYA_EMOJI } from "./core/personality.js";
-import { DiscordBridge } from "./bridges/discord.js";
-import { TelegramBridge } from "./bridges/telegram.js";
-import { SlackBridge } from "./bridges/slack.js";
-import { WhatsAppBridge } from "./bridges/whatsapp.js";
-import { WebBridge } from "./bridges/web.js";
+
 import { existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -48,6 +44,7 @@ async function main() {
   const bridges = {};
   if (config.web?.enabled !== false) {
     console.log(`\n${ALYA_EMOJI} Starting web dashboard...`);
+    const { WebBridge } = await import("./bridges/web.js");
     const web = new WebBridge(config.web || { port: 3000 }, bridges);
     await web.start();
     bridges.web = web;
@@ -57,6 +54,7 @@ async function main() {
   // Discord
   if (config.discord?.enabled) {
     console.log(`\n${ALYA_EMOJI} Starting Discord bridge...`);
+    const { DiscordBridge } = await import("./bridges/discord.js");
     const discord = new DiscordBridge(config.discord);
     const ok = await discord.start();
     if (ok) bridges.discord = discord;
@@ -65,6 +63,7 @@ async function main() {
   // Telegram
   if (config.telegram?.enabled) {
     console.log(`\n${ALYA_EMOJI} Starting Telegram bridge...`);
+    const { TelegramBridge } = await import("./bridges/telegram.js");
     const telegram = new TelegramBridge(config.telegram);
     const ok = await telegram.start();
     if (ok) bridges.telegram = telegram;
@@ -73,6 +72,7 @@ async function main() {
   // Slack
   if (config.slack?.enabled) {
     console.log(`\n${ALYA_EMOJI} Starting Slack bridge...`);
+    const { SlackBridge } = await import("./bridges/slack.js");
     const slack = new SlackBridge(config.slack);
     const ok = await slack.start();
     if (ok) bridges.slack = slack;
@@ -81,6 +81,7 @@ async function main() {
   // WhatsApp
   if (config.whatsapp?.enabled) {
     console.log(`\n${ALYA_EMOJI} Starting WhatsApp bridge...`);
+    const { WhatsAppBridge } = await import("./bridges/whatsapp.js");
     const whatsapp = new WhatsAppBridge(config.whatsapp);
     const ok = await whatsapp.start();
     if (ok) bridges.whatsapp = whatsapp;

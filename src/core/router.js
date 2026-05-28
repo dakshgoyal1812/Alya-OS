@@ -78,6 +78,56 @@ export const MODEL_DIRECTORY = {
     speed: 75,
     intelligence: 95,
     description: "DeepSeek model hosted on OpenRouter gateway."
+  },
+  "gemini-thinking": {
+    name: "gemini-2.0-flash-thinking-exp-01-21",
+    provider: "google",
+    type: "reasoning",
+    cost: 0.0,
+    speed: 45,
+    intelligence: 98,
+    supportsTools: false,
+    description: "Google Gemini 2.0 Flash Thinking reasoning model (Free tier)."
+  },
+  "gemini-flash": {
+    name: "gemini-2.0-flash",
+    provider: "google",
+    type: "fast",
+    cost: 0.0,
+    speed: 85,
+    intelligence: 88,
+    supportsTools: true,
+    description: "Google Gemini 2.0 Flash model (Free tier)."
+  },
+  "openrouter-deepseek-r1": {
+    name: "deepseek/deepseek-r1:free",
+    provider: "openrouter",
+    type: "reasoning",
+    cost: 0.0,
+    speed: 35,
+    intelligence: 99,
+    supportsTools: false,
+    description: "DeepSeek R1 reasoning model via OpenRouter (Free tier)."
+  },
+  "openrouter-llama-free": {
+    name: "meta-llama/llama-3.3-70b-instruct:free",
+    provider: "openrouter",
+    type: "reasoning",
+    cost: 0.0,
+    speed: 65,
+    intelligence: 95,
+    supportsTools: true,
+    description: "Llama 3.3 70B Instruct via OpenRouter (Free tier)."
+  },
+  "openrouter-qwen-free": {
+    name: "qwen/qwen-2.5-72b-instruct:free",
+    provider: "openrouter",
+    type: "reasoning",
+    cost: 0.0,
+    speed: 55,
+    intelligence: 96,
+    supportsTools: true,
+    description: "Qwen 2.5 72B Instruct via OpenRouter (Free tier)."
   }
 };
 
@@ -108,6 +158,16 @@ export class ModelRouter {
     // Check specific task type
     const isCodingTask = promptLower.includes("write code") || promptLower.includes("debug") || promptLower.includes("fix syntax") || promptLower.includes("python");
     const isCreativeTask = promptLower.includes("write a story") || promptLower.includes("draft email") || promptLower.includes("creative");
+    
+    // Identify complex math, logic, reasoning, or deep thinking prompts
+    const isReasoningTask = promptLower.includes("think") || 
+                            promptLower.includes("explain in detail") || 
+                            promptLower.includes("solve") || 
+                            promptLower.includes("math") || 
+                            promptLower.includes("logic") || 
+                            promptLower.includes("why") || 
+                            promptLower.includes("complex") || 
+                            promptLower.includes("analyze");
 
     if (mode === "speed") {
       return this._verifyOrFallback("groq-llama-8b");
@@ -118,6 +178,9 @@ export class ModelRouter {
     }
 
     // Default intelligence mode routing
+    if (isReasoningTask) {
+      return this._verifyOrFallback("gemini-thinking");
+    }
     if (isCodingTask) {
       return this._verifyOrFallback("groq-llama-70b");
     }
@@ -148,11 +211,15 @@ export class ModelRouter {
       return preferredKey;
     }
 
-    // Failover sequence: Groq 70b -> Groq 8b -> Local Llama
+    // Failover sequence: Preferred -> Gemini thinking -> OpenRouter DeepSeek R1 -> Groq 70b -> Groq 8b
     console.warn(`⚠️ Target model provider for '${preferredKey}' is unavailable. Invoking failover...`);
     this.benchmarks.failures++;
 
-    if (preferredKey !== "groq-llama-70b") {
+    if (preferredKey === "gemini-thinking") {
+      return this._verifyOrFallback("openrouter-deepseek-r1");
+    } else if (preferredKey === "openrouter-deepseek-r1") {
+      return this._verifyOrFallback("groq-llama-70b");
+    } else if (preferredKey !== "groq-llama-70b") {
       return this._verifyOrFallback("groq-llama-70b");
     } else {
       return "groq-llama-8b";

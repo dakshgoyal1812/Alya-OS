@@ -3,7 +3,7 @@
   "appName": "Alya OS",
   "webDir": "web",
   "server": {
-    "url": "https://alya-os.onrender.com/",
+    "url": "http://localhost:3000/",
     "cleartext": true
   }
 }

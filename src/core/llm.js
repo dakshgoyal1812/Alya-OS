@@ -153,6 +153,77 @@ export class LLMEngine {
     });
   }
 
+  _getProviderForModel(modelName) {
+    for (const [key, details] of Object.entries(MODEL_DIRECTORY)) {
+      if (details.name === modelName) {
+        return details.provider;
+      }
+    }
+    return "groq"; // Fallback to groq
+  }
+
+  _modelSupportsTools(modelName) {
+    for (const [key, details] of Object.entries(MODEL_DIRECTORY)) {
+      if (details.name === modelName) {
+        return details.supportsTools !== false;
+      }
+    }
+    return true; // Default to true
+  }
+
+  _getClientForModel(modelName) {
+    const provider = this._getProviderForModel(modelName);
+    const config = loadConfig();
+
+    if (provider === "google") {
+      const apiKey = config.google?.apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+      if (!apiKey || apiKey.startsWith("PASTE")) {
+        throw new Error("Google Gemini API key is missing. Please add it to config.json or set GEMINI_API_KEY.");
+      }
+      return new OpenAI({
+        apiKey: apiKey,
+        baseURL: "https://generativelanguage.googleapis.com/v1beta/openai"
+      });
+    }
+
+    if (provider === "openrouter") {
+      const apiKey = config.openrouter?.apiKey || process.env.OPENROUTER_API_KEY;
+      if (!apiKey || apiKey.startsWith("PASTE")) {
+        throw new Error("OpenRouter API key is missing. Please add it to config.json or set OPENROUTER_API_KEY.");
+      }
+      return new OpenAI({
+        apiKey: apiKey,
+        baseURL: "https://openrouter.ai/api/v1",
+        defaultHeaders: {
+          "HTTP-Referer": "https://github.com/AlyaAI/Alya",
+          "X-Title": "Alya AI Assistant",
+        }
+      });
+    }
+
+    if (provider === "openai") {
+      const apiKey = config.openai?.apiKey || process.env.OPENAI_API_KEY;
+      if (!apiKey || apiKey.startsWith("PASTE")) {
+        throw new Error("OpenAI API key is missing. Please add it to config.json or set OPENAI_API_KEY.");
+      }
+      return new OpenAI({
+        apiKey: apiKey,
+        baseURL: "https://api.openai.com/v1"
+      });
+    }
+
+    if (provider === "ollama") {
+      const host = config.ollama?.host || "http://localhost:11434";
+      return new OpenAI({
+        apiKey: "ollama",
+        baseURL: `${host}/v1`
+      });
+    }
+
+    // Default to Groq (which is this.openai client with its API rotation mechanism)
+    return this.openai;
+  }
+
   /**
    * Switch to the next available API key
    * Returns true if switched successfully, false if no more keys
@@ -270,15 +341,17 @@ User Level: ${data.level} (Streak: ${data.streak} Days)`;
     if (depth > 5) return "✨ ...I'm thinking too much. Let's stop here.";
 
     const model = useFallback ? this.fallbackModel : this.model;
+    const client = this._getClientForModel(model);
+    const supportsTools = this._modelSupportsTools(model);
 
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
 
-      const response = await this.openai.chat.completions.create({
+      const response = await client.chat.completions.create({
         model,
         messages,
-        tools: availableTools,
+        ...(supportsTools && { tools: availableTools }),
         temperature: this.temperature,
         max_tokens: this.maxTokens,
       }, { signal: controller.signal });
@@ -335,7 +408,7 @@ User Level: ${data.level} (Streak: ${data.streak} Days)`;
     } catch (error) {
       const errMsg = error?.message || String(error);
       const errStatus = error?.status || error?.response?.status || 'N/A';
-      console.error(`Groq chat error [model=${model}, status=${errStatus}]: ${errMsg}`);
+      console.error(`Chat error [model=${model}, status=${errStatus}]: ${errMsg}`);
 
       // Try switching to backup key on quota/rate-limit errors
       if (this._isQuotaError(error) && this._switchToNextKey()) {
@@ -471,12 +544,14 @@ User Level: ${data.level} (Streak: ${data.streak} Days)`;
     if (depth > 5) return "✨ ...I got stuck in a loop.";
 
     const model = useFallback ? this.fallbackModel : this.model;
+    const client = this._getClientForModel(model);
+    const supportsTools = this._modelSupportsTools(model);
 
     try {
-      const stream = await this.openai.chat.completions.create({
+      const stream = await client.chat.completions.create({
         model,
         messages,
-        tools: availableTools,
+        ...(supportsTools && { tools: availableTools }),
         temperature: this.temperature,
         max_tokens: this.maxTokens,
         stream: true,
@@ -565,7 +640,7 @@ User Level: ${data.level} (Streak: ${data.streak} Days)`;
     } catch (error) {
       const errMsg = error?.message || String(error);
       const errStatus = error?.status || error?.response?.status || 'N/A';
-      console.error(`Groq stream error [model=${model}, status=${errStatus}]: ${errMsg}`);
+      console.error(`Stream error [model=${model}, status=${errStatus}]: ${errMsg}`);
 
       // Try switching to backup key on quota/rate-limit errors
       if (this._isQuotaError(error) && this._switchToNextKey()) {
@@ -634,8 +709,9 @@ User Level: ${data.level} (Streak: ${data.streak} Days)`;
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+      const client = this._getClientForModel(this.model);
 
-      const response = await this.openai.chat.completions.create({
+      const response = await client.chat.completions.create({
         model: this.model,
         messages: [{ role: "system", content: this._getSystemPromptText() }, { role: "user", content: prompt }],
         max_tokens: this.maxTokens,
@@ -655,7 +731,8 @@ User Level: ${data.level} (Streak: ${data.streak} Days)`;
       if (errMsg.includes("token") || errMsg.includes("context_length")) {
         console.warn(`⚠️ Token overflow on generate. Trying ${this.fallbackModel}...`);
         try {
-          const fallback = await this.openai.chat.completions.create({
+          const fallbackClient = this._getClientForModel(this.fallbackModel);
+          const fallback = await fallbackClient.chat.completions.create({
             model: this.fallbackModel,
             messages: [{ role: "system", content: this._getSystemPromptText() }, { role: "user", content: prompt.substring(0, 8000) }],
             max_tokens: this.maxTokens,

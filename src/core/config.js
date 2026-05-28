@@ -46,6 +46,12 @@ const DEFAULT_CONFIG = {
   whatsapp: {
     enabled: false,
   },
+  google: {
+    apiKey: "",
+  },
+  openrouter: {
+    apiKey: "",
+  },
 };
 
 let cachedConfig = null;
@@ -139,6 +145,18 @@ export function loadConfig() {
     if (process.env.ELEVENLABS_VOICE_ID) {
       if (!cachedConfig.elevenlabs) cachedConfig.elevenlabs = {};
       cachedConfig.elevenlabs.voiceId = process.env.ELEVENLABS_VOICE_ID;
+    }
+
+    // Google / Gemini Env Variables
+    if (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY) {
+      if (!cachedConfig.google) cachedConfig.google = {};
+      cachedConfig.google.apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    }
+
+    // OpenRouter Env Variables
+    if (process.env.OPENROUTER_API_KEY) {
+      if (!cachedConfig.openrouter) cachedConfig.openrouter = {};
+      cachedConfig.openrouter.apiKey = process.env.OPENROUTER_API_KEY;
     }
     
   } catch (error) {

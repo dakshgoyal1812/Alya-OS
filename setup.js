@@ -54,6 +54,8 @@ async function main() {
     slack: existingConfig.slack || { enabled: false },
     whatsapp: existingConfig.whatsapp || { enabled: false },
     groq: existingConfig.groq || {},
+    google: existingConfig.google || {},
+    openrouter: existingConfig.openrouter || {},
     email: existingConfig.email || {},
     elevenlabs: existingConfig.elevenlabs || {},
     spotify: existingConfig.spotify || {},
@@ -97,6 +99,46 @@ async function main() {
   }
 
   console.log(g("\n  ✓ Groq API Key Saved"));
+
+  // ── Step 1B: Free Thinking Models Setup ─────────────────────
+  console.log(bold("\n  🧠 Step 1B: Configure Free High-Thinking Models (Optional)\n"));
+  console.log(d("  Alya can leverage Google Gemini and OpenRouter for free, deep-thinking reasoning."));
+  console.log(d("  - Get a free Google Gemini key at: ") + b("https://aistudio.google.com/"));
+  console.log(d("  - Get a free OpenRouter key at:    ") + b("https://openrouter.ai/\n"));
+
+  const thinkingAnswers = await inquirer.prompt([
+    {
+      type: "confirm",
+      name: "setupThinking",
+      message: r("✨") + " Would you like to configure Google Gemini or OpenRouter now?",
+      default: true,
+    },
+    {
+      type: "input",
+      name: "geminiKey",
+      message: r("✨") + " Google AI Studio (Gemini) API Key (press Enter to skip):",
+      default: config.google.apiKey || undefined,
+      when: (answers) => answers.setupThinking,
+    },
+    {
+      type: "input",
+      name: "openrouterKey",
+      message: r("✨") + " OpenRouter API Key (press Enter to skip):",
+      default: config.openrouter.apiKey || undefined,
+      when: (answers) => answers.setupThinking,
+    },
+  ]);
+
+  if (thinkingAnswers.setupThinking) {
+    if (thinkingAnswers.geminiKey && thinkingAnswers.geminiKey.trim()) {
+      config.google = { apiKey: thinkingAnswers.geminiKey.trim() };
+      console.log(g("  ✓ Google Gemini API Key Configured"));
+    }
+    if (thinkingAnswers.openrouterKey && thinkingAnswers.openrouterKey.trim()) {
+      config.openrouter = { apiKey: thinkingAnswers.openrouterKey.trim() };
+      console.log(g("  ✓ OpenRouter API Key Configured"));
+    }
+  }
 
   // ── Step 2: Web Dashboard ────────────────────────────────
   console.log(bold("\n  🌐 Step 2: Web Dashboard\n"));
@@ -286,6 +328,8 @@ async function main() {
 
   console.log(bold("  What's been configured:\n"));
   console.log(`  🧠 Groq AI: ${g(config.groq.model)}`);
+  console.log(`  🧠 Google Gemini: ${config.google?.apiKey ? g("Configured") : d("Not Configured")}`);
+  console.log(`  🧠 OpenRouter: ${config.openrouter?.apiKey ? g("Configured") : d("Not Configured")}`);
   console.log(`  🌐 Web Dashboard: ${config.web.enabled ? g("Enabled") + d(` (port ${config.web.port})`) : r("Disabled")}`);
   console.log(`  💬 Discord: ${config.discord.enabled ? g("Enabled") : d("Disabled")}`);
   console.log(`  ✈️  Telegram: ${config.telegram.enabled ? g("Enabled") : d("Disabled")}`);
