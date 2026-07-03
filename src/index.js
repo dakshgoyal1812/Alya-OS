@@ -20,7 +20,7 @@ const configPath = existsSync(renderSecretPath) ? renderSecretPath : localPath;
 async function main() {
   console.log("");
   console.log("  ╔══════════════════════════════════════════╗");
-  console.log("  ║  ✨  Alya — AI Assistant                 ║");
+  console.log("  ║  ✨  Alisa — AI Assistant                ║");
   console.log("  ║  Private • Local • Always Ready          ║");
   console.log("  ╚══════════════════════════════════════════╝");
   console.log("");
@@ -93,7 +93,7 @@ async function main() {
   global.bridges = bridges; // Expose globally for automation tools
   
   console.log("\n  ────────────────────────────────────────");
-  console.log(`  ${ALYA_EMOJI} Alya is online and ready.`);
+  console.log(`  ${ALYA_EMOJI} Alisa is online and ready.`);
   console.log(`  Active bridges: ${activeBridges.join(", ") || "none"}`);
   if (bridges.web) {
     console.log(`  Dashboard: http://localhost:${config.web?.port || 3000}`);
@@ -120,7 +120,7 @@ async function main() {
 
   // Graceful shutdown
   const shutdown = async () => {
-    console.log(`\n${ALYA_EMOJI} Alya is shutting down... See you next time.`);
+    console.log(`\n${ALYA_EMOJI} Alisa is shutting down... See you next time.`);
     for (const bridge of Object.values(bridges)) {
       if (bridge.stop) await bridge.stop();
     }

@@ -45,7 +45,7 @@ export class SlackBridge {
       });
 
       // Slash commands
-      this.app.command("/alya", async ({ command, ack, respond }) => {
+      this.app.command("/alisa", async ({ command, ack, respond }) => {
         await ack();
         await this.handleCommand(command, respond);
       });
@@ -157,14 +157,14 @@ export class SlackBridge {
   }
 
   /**
-   * Handle /alya slash command
+   * Handle /alisa slash command
    */
   async handleCommand(command, respond) {
     const args = command.text.trim().toLowerCase();
 
     if (args === "help") {
       await respond({
-        text: `✨ *Alya — Help*\n\n• Just message me directly or @mention me!\n• \`/alya help\` — This help message\n• \`/alya status\` — Check my systems\n• \`/alya clear\` — Clear conversation history\n\n_Your local AI assistant — 100% private._ ✨`,
+        text: `✨ *Alisa — Help*\n\n• Just message me directly or @mention me!\n• \`/alisa help\` — This help message\n• \`/alisa status\` — Check my systems\n• \`/alisa clear\` — Clear conversation history\n\n_Your local AI assistant — 100% private._ ✨`,
       });
       return;
     }
@@ -172,7 +172,7 @@ export class SlackBridge {
     if (args === "status") {
       const groqOk = await this.llm.isAvailable();
       await respond({
-        text: `✨ *Alya Status*\n\n🧠 Brain: ${groqOk ? "✅ Online" : "❌ Offline"}\n📡 Slack: ✅ Connected\n🔒 Privacy: 100% Local`,
+        text: `✨ *Alisa Status*\n\n🧠 Brain: ${groqOk ? "✅ Online" : "❌ Offline"}\n📡 Slack: ✅ Connected\n🔒 Privacy: 100% Local`,
       });
       return;
     }

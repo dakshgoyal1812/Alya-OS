@@ -128,12 +128,22 @@ export const MODEL_DIRECTORY = {
     intelligence: 96,
     supportsTools: true,
     description: "Qwen 2.5 72B Instruct via OpenRouter (Free tier)."
+  },
+  "nvidia-nemotron": {
+    name: "nvidia/llama-3.1-nemotron-70b-instruct",
+    provider: "nvidia",
+    type: "reasoning",
+    cost: 0.0007,
+    speed: 60,
+    intelligence: 96,
+    description: "NVIDIA Llama 3.1 Nemotron 70B Instruct model."
   }
 };
 
 export class ModelRouter {
   constructor() {
     this.config = loadConfig();
+    this.preferredProvider = null;
     this.benchmarks = {
       totalRequests: 0,
       totalCost: 0,
@@ -148,6 +158,76 @@ export class ModelRouter {
    */
   route(prompt, mode = "intelligence", fileAttached = false) {
     const promptLower = prompt.toLowerCase();
+
+    // Check for persistent switches
+    if (promptLower.includes("switch to openrouter") || promptLower.includes("use openrouter always")) {
+      this.preferredProvider = "openrouter";
+      console.log("🔄 Model Router: Switched preferred provider to OpenRouter");
+    } else if (promptLower.includes("switch to google") || promptLower.includes("switch to gemini") || promptLower.includes("use google always") || promptLower.includes("use gemini always")) {
+      this.preferredProvider = "google";
+      console.log("🔄 Model Router: Switched preferred provider to Google Gemini");
+    } else if (promptLower.includes("switch to nvidia") || promptLower.includes("use nvidia always")) {
+      this.preferredProvider = "nvidia";
+      console.log("🔄 Model Router: Switched preferred provider to NVIDIA NIM");
+    } else if (promptLower.includes("switch to groq") || promptLower.includes("use groq always")) {
+      this.preferredProvider = "groq";
+      console.log("🔄 Model Router: Switched preferred provider to Groq");
+    } else if (promptLower.includes("switch to local") || promptLower.includes("switch to ollama") || promptLower.includes("use local always")) {
+      this.preferredProvider = "ollama";
+      console.log("🔄 Model Router: Switched preferred provider to Ollama");
+    } else if (promptLower.includes("reset model selection") || promptLower.includes("use default model") || promptLower.includes("switch to default")) {
+      this.preferredProvider = null;
+      console.log("🔄 Model Router: Reset preferred provider to auto-routing");
+    }
+
+    // Determine the active provider (one-off override vs persistent choice)
+    let activeProvider = this.preferredProvider;
+    
+    if (promptLower.includes("use openrouter")) {
+      activeProvider = "openrouter";
+    } else if (promptLower.includes("use google") || promptLower.includes("use gemini")) {
+      activeProvider = "google";
+    } else if (promptLower.includes("use nvidia")) {
+      activeProvider = "nvidia";
+    } else if (promptLower.includes("use groq")) {
+      activeProvider = "groq";
+    } else if (promptLower.includes("use local") || promptLower.includes("use ollama")) {
+      activeProvider = "ollama";
+    }
+
+    // Direct key matches
+    if (promptLower.includes("use claude") || promptLower.includes("use sonnet")) {
+      return this._verifyOrFallback("claude-sonnet");
+    }
+    if (promptLower.includes("use gpt-4o") || promptLower.includes("use openai")) {
+      return this._verifyOrFallback("gpt-4o");
+    }
+
+    // Route to appropriate model of the active provider
+    if (activeProvider) {
+      if (activeProvider === "google") {
+        if (promptLower.includes("think") || mode === "intelligence") {
+          return this._verifyOrFallback("gemini-thinking");
+        }
+        return this._verifyOrFallback("gemini-flash");
+      }
+      if (activeProvider === "openrouter") {
+        if (promptLower.includes("think") || mode === "intelligence") {
+          return this._verifyOrFallback("openrouter-deepseek-r1");
+        }
+        return this._verifyOrFallback("openrouter-deepseek");
+      }
+      if (activeProvider === "nvidia") {
+        return this._verifyOrFallback("nvidia-nemotron");
+      }
+      if (activeProvider === "groq") {
+        if (mode === "speed") return this._verifyOrFallback("groq-llama-8b");
+        return this._verifyOrFallback("groq-llama-70b");
+      }
+      if (activeProvider === "ollama") {
+        return this._verifyOrFallback("local-llama");
+      }
+    }
     
     // Check long context need
     const needsLongContext = fileAttached || prompt.length > 8000 || promptLower.includes("summarize codebase") || promptLower.includes("read this pdf");
@@ -201,10 +281,25 @@ export class ModelRouter {
     // Check configuration status for keys
     let isAvailable = false;
     if (key.provider === "groq" && config.groq?.apiKey && !config.groq.apiKey.startsWith("PASTE")) isAvailable = true;
-    if (key.provider === "anthropic" && config.anthropic?.apiKey) isAvailable = true;
-    if (key.provider === "openai" && config.openai?.apiKey) isAvailable = true;
-    if (key.provider === "google" && config.google?.apiKey) isAvailable = true;
-    if (key.provider === "openrouter" && config.openrouter?.apiKey) isAvailable = true;
+    if (key.provider === "anthropic" && config.anthropic?.apiKey && !config.anthropic.apiKey.startsWith("PASTE")) isAvailable = true;
+    if (key.provider === "openai" && config.openai?.apiKey && !config.openai.apiKey.startsWith("PASTE")) isAvailable = true;
+    
+    if (key.provider === "google") {
+      const hasKey = (config.google?.apiKey && !config.google.apiKey.startsWith("PASTE")) || 
+                     (config.google?.apiKeys && config.google.apiKeys.some(k => k && !k.startsWith("PASTE")));
+      if (hasKey) isAvailable = true;
+    }
+    if (key.provider === "openrouter") {
+      const hasKey = (config.openrouter?.apiKey && !config.openrouter.apiKey.startsWith("PASTE")) || 
+                     (config.openrouter?.apiKeys && config.openrouter.apiKeys.some(k => k && !k.startsWith("PASTE")));
+      if (hasKey) isAvailable = true;
+    }
+    if (key.provider === "nvidia") {
+      const hasKey = (config.nvidia?.apiKey && !config.nvidia.apiKey.startsWith("PASTE")) || 
+                     (config.nvidia?.apiKeys && config.nvidia.apiKeys.some(k => k && !k.startsWith("PASTE")));
+      if (hasKey) isAvailable = true;
+    }
+    
     if (key.provider === "ollama" && config.ollama?.enabled) isAvailable = true;
 
     if (isAvailable) {

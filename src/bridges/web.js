@@ -4,6 +4,7 @@ import { Server } from "socket.io";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { LLMEngine } from "../core/llm.js";
+import { loadConfig } from "../core/config.js";
 import { getHistory, addMessage, clearHistory, getStats } from "../core/memory.js";
 import { getRandomGreeting, SERVICE_CONNECT_MESSAGES } from "../core/personality.js";
 import { generateTTS } from "../core/tts.js";
@@ -89,8 +90,13 @@ export class WebBridge {
     // API: Health check
     this.app.get("/api/health", async (req, res) => {
       const groqOk = await this.llm.isAvailable();
-      const geminiOk = this.llm.router.config.google?.apiKey && !this.llm.router.config.google.apiKey.startsWith("PASTE") ? true : false;
-      const openrouterOk = this.llm.router.config.openrouter?.apiKey && !this.llm.router.config.openrouter.apiKey.startsWith("PASTE") ? true : false;
+      const googleConfig = this.llm.router.config.google;
+      const geminiOk = (googleConfig?.apiKey && !googleConfig.apiKey.startsWith("PASTE")) ||
+                       (googleConfig?.apiKeys && googleConfig.apiKeys.some(k => k && !k.startsWith("PASTE"))) ? true : false;
+                       
+      const openrouterConfig = this.llm.router.config.openrouter;
+      const openrouterOk = (openrouterConfig?.apiKey && !openrouterConfig.apiKey.startsWith("PASTE")) ||
+                           (openrouterConfig?.apiKeys && openrouterConfig.apiKeys.some(k => k && !k.startsWith("PASTE"))) ? true : false;
       const models = groqOk ? await this.llm.listModels() : [];
       res.json({
         status: "ok",
@@ -211,7 +217,7 @@ export class WebBridge {
         const openTasks = data.tasks.filter(t => !t.completed).map(t => t.text).join(", ");
         const openGoals = data.goals.map(g => g.text).join(", ");
         
-        const prompt = `You are Alya's Brain Core. The user wants an AI Daily Summary and Schedule Optimization. 
+        const prompt = `You are Alisa's Brain Core. The user wants an AI Daily Summary and Schedule Optimization. 
 Here is their current state:
 Level: ${data.level} (XP: ${data.xp}/200)
 Pending Tasks: ${openTasks || "None"}
@@ -294,6 +300,46 @@ Please generate a motivating daily summary, highlighting priorities and providin
         return res.status(404).json({ error: "QR code not available yet. Please wait for initialization." });
       }
       res.redirect(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(wa.lastQR)}`);
+    });
+
+    // WhatsApp Cloud API Webhook Verification (GET)
+    this.app.get("/webhook/whatsapp", (req, res) => {
+      const config = loadConfig();
+      const verifyToken = config.whatsapp?.webhookVerifyToken || "alisa_token";
+      
+      const mode = req.query["hub.mode"];
+      const token = req.query["hub.verify_token"];
+      const challenge = req.query["hub.challenge"];
+      
+      if (mode === "subscribe" && token === verifyToken) {
+        console.log("✅ WhatsApp Webhook verified successfully!");
+        return res.status(200).send(challenge);
+      }
+      return res.sendStatus(403);
+    });
+
+    // WhatsApp Cloud API Webhook Inbound Messages (POST)
+    this.app.post("/webhook/whatsapp", async (req, res) => {
+      console.log("📩 WhatsApp webhook POST received:", JSON.stringify(req.body));
+      // Respond to Meta immediately to prevent retry loops
+      res.sendStatus(200);
+      
+      const config = loadConfig();
+      if (!config.whatsapp?.enabled || !config.whatsapp?.useCloudAPI) return;
+
+      const value = req.body?.entry?.[0]?.changes?.[0]?.value;
+      const message = value?.messages?.[0];
+      
+      if (message && message.type === "text") {
+        const from = message.from;
+        const body = message.text.body;
+        const contactName = value?.contacts?.[0]?.profile?.name || "User";
+        
+        const whatsappBridge = this.bridges.whatsapp;
+        if (whatsappBridge && typeof whatsappBridge.handleCloudMessage === "function") {
+          await whatsappBridge.handleCloudMessage(from, body, contactName);
+        }
+      }
     });
 
     // API: Direct execute backend tool from Creator/Coder dashboard
@@ -819,10 +865,10 @@ Please generate a motivating daily summary, highlighting priorities and providin
         // 1. AI Firewall Prompt Injection Scan
         const scan = this.firewall.scanPrompt(finalMessage);
         if (scan.blocked) {
-          socket.emit("stream", { content: `⚠️ Alya AI Firewall Blocked: Prompt injection pattern detected (${scan.score}% threat level).` });
+          socket.emit("stream", { content: `⚠️ Alisa AI Firewall Blocked: Prompt injection pattern detected (${scan.score}% threat level).` });
           socket.emit("stream_end", {
             role: "assistant",
-            content: `⚠️ Alya AI Firewall Blocked: Prompt injection pattern detected (${scan.score}% threat level).`,
+            content: `⚠️ Alisa AI Firewall Blocked: Prompt injection pattern detected (${scan.score}% threat level).`,
             timestamp: new Date().toISOString()
           });
           return;
@@ -897,6 +943,21 @@ Please generate a motivating daily summary, highlighting priorities and providin
             timestamp: new Date().toISOString(),
           });
 
+          // Generate and emit voice audio if a voice match is found
+          const voiceMatch = fullResponse.match(/<voice>([\s\S]*?)<\/voice>/i);
+          if (voiceMatch) {
+            const spokenText = voiceMatch[1].trim();
+            try {
+              const audioPath = await generateTTS(spokenText, voiceId);
+              if (audioPath) {
+                const filename = path.basename(audioPath);
+                socket.emit("voice", { url: `/temp/${filename}` });
+              }
+            } catch (err) {
+              console.error("Failed to generate TTS for web socket:", err.message);
+            }
+          }
+
           // Calculate and emit experimental mind metrics
           const confidence = this.experimental.calculateConfidenceScore(fullResponse);
           const bias = this.experimental.detectResponseBias(fullResponse);
@@ -931,7 +992,7 @@ Please generate a motivating daily summary, highlighting priorities and providin
       socket.on("set_mood", (data) => {
         if (data && data.mood) {
           this.llm.mood = data.mood;
-          console.log(`🎭 Web client changed Alya's mood to: ${data.mood}`);
+          console.log(`🎭 Web client changed Alisa's mood to: ${data.mood}`);
         }
       });
 
@@ -939,7 +1000,7 @@ Please generate a motivating daily summary, highlighting priorities and providin
       socket.on("save_lore", (data) => {
         if (data && typeof data.lore === "string") {
           this.llm.customLore = data.lore;
-          console.log(`📜 Web client updated Alya's custom system lore.`);
+          console.log(`📜 Web client updated Alisa's custom system lore.`);
         }
       });
 

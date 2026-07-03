@@ -83,7 +83,7 @@ export class TelegramBridge {
 
     // /help command
     this.bot.onText(/\/help/, (msg) => {
-      const helpText = `✨ *Alya — Help*
+      const helpText = `✨ *Alisa — Help*
 
 I'm your private AI assistant. Just send me a message and I'll help.
 
@@ -106,7 +106,7 @@ _Let's get to work._ ✨`;
     // /status command
     this.bot.onText(/\/status/, async (msg) => {
       const groqOk = await this.llm.isAvailable();
-      const status = `✨ *Alya Status*
+      const status = `✨ *Alisa Status*
 
 🧠 Brain (Groq API): ${groqOk ? "✅ Online" : "❌ Offline"}
 📡 Telegram: ✅ Connected

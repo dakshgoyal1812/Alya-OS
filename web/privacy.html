@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - Alisa AI Assistant</title>
+  <style>
+    :root {
+      --bg-primary: #0a051b;
+      --bg-secondary: #120b2e;
+      --accent-color: #d154ff;
+      --accent-hover: #b038dd;
+      --text-main: #f0ecfa;
+      --text-muted: #a69bbd;
+      --border-color: #291d52;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 60px auto;
+      padding: 40px;
+      background-color: var(--bg-secondary);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-top: 0;
+      color: #fff;
+      text-shadow: 0 0 10px rgba(209, 84, 255, 0.3);
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 15px;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      color: var(--accent-color);
+      margin-top: 30px;
+    }
+
+    p, li {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 10px;
+    }
+
+    .footer {
+      margin-top: 50px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+      font-size: 0.9rem;
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    .home-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: var(--accent-color);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .home-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="home-link">← Back to Dashboard</a>
+    <h1>Privacy Policy</h1>
+    <p><strong>Effective Date: July 3, 2026</strong></p>
+    
+    <p>Welcome to <strong>Alisa AI Assistant</strong> ("we", "our", or "us"). We are committed to protecting the privacy of our users. This Privacy Policy explains how we collect, use, and safeguard your information when you interact with Alisa through our web dashboard and WhatsApp Cloud API integration.</p>
+
+    <h2>1. Information We Collect</h2>
+    <p>To provide conversational AI features, we process the following information:</p>
+    <ul>
+      <li><strong>Message Content:</strong> The text and media messages you explicitly send to Alisa.</li>
+      <li><strong>User Identifiers:</strong> Your phone number (when using WhatsApp) or session tokens (when using the Web Dashboard) to maintain conversational context and history.</li>
+      <li><strong>Voice Notes:</strong> Temporary audio files sent by you, which are transcribed using the OpenAI Whisper API to let Alisa understand and respond to spoken queries.</li>
+    </ul>
+
+    <h2>2. How We Use Your Information</h2>
+    <p>We use your information solely for the following purposes:</p>
+    <ul>
+      <li>To process your queries and generate natural language responses.</li>
+      <li>To maintain conversational memory across message sessions.</li>
+      <li>To generate synthesized voice note responses if voice/audio output is requested.</li>
+    </ul>
+
+    <h2>3. Data Sharing & Security</h2>
+    <ul>
+      <li><strong>No Selling of Data:</strong> We do not sell, trade, rent, or lease your conversation details, phone numbers, or metadata to third parties.</li>
+      <li><strong>API Providers:</strong> Your message requests are processed through secure API endpoints hosted by our LLM providers (Groq Cloud, Google Gemini, OpenRouter, and NVIDIA NIM) under their respective API privacy terms.</li>
+      <li><strong>Security Measures:</strong> We employ industry-standard secure socket layers (HTTPS/WSS) and encryption to secure your callback webhooks and communication tunnels.</li>
+    </ul>
+
+    <h2>4. User Rights and Data Erasure</h2>
+    <p>You retain full ownership of your conversation history. You can request deletion of your chat history at any time by:</p>
+    <ul>
+      <li>Clicking the <strong>"Clear Chat"</strong> button inside your local Web Dashboard.</li>
+      <li>Sending a message request to clear memory directly.</li>
+    </ul>
+
+    <h2>5. Updates to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time. We encourage users to check this page periodically for any changes.</p>
+
+    <div class="footer">
+      <p>© 2026 Alisa AI Assistant. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>

@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { loadConfig } from "./config.js";
 import { EdgeTTS } from "node-edge-tts";
+import * as googleTTS from "google-tts-api";
 
 // Global state to track which ElevenLabs key we are currently using
 let currentElevenLabsKeyIndex = 0;
@@ -33,13 +34,54 @@ async function generateEdgeTTS(text) {
 }
 
 /**
+ * Generates an MP3 file from text using Google TTS API.
+ */
+async function generateGoogleTTS(text, lang = "hi-IN") {
+  try {
+    const cleanText = text.replace(/<[^>]*>/g, "").trim();
+    if (!cleanText) return null;
+    
+    // google-tts-api returns base64 string
+    const base64 = await googleTTS.getAudioBase64(cleanText, {
+      lang: lang,
+      slow: false,
+      host: "https://translate.google.com",
+      timeout: 10000,
+    });
+    
+    const buffer = Buffer.from(base64, "base64");
+    const tempDir = path.join(process.cwd(), "data", "temp");
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+    
+    const filePath = path.join(tempDir, `voice_google_${Date.now()}.mp3`);
+    fs.writeFileSync(filePath, buffer);
+    return filePath;
+  } catch (err) {
+    console.error("❌ Google TTS Generation failed:", err.message);
+    return null;
+  }
+}
+
+/**
  * Generates an MP3 file from text using ElevenLabs API with multi-key failover.
  */
 export async function generateTTS(text, voiceIdOverride = null) {
   const config = loadConfig();
+
+  // Route to custom non-ElevenLabs providers based on voiceIdOverride
+  if (voiceIdOverride === "google-hindi") {
+    return await generateGoogleTTS(text, "hi-IN");
+  }
+  if (voiceIdOverride === "google-english") {
+    return await generateGoogleTTS(text, "en-US");
+  }
+  if (voiceIdOverride === "edge-hindi" || voiceIdOverride === "local-female") {
+    return await generateEdgeTTS(text);
+  }
+
   const keys = config.elevenlabs?.apiKeys?.filter(k => k && !k.includes("PASTE")) || [];
   
-  if (!config.elevenlabs?.enabled || keys.length === 0) {
+  if (voiceIdOverride === "google-tts" || !config.elevenlabs?.enabled || keys.length === 0) {
     console.warn("⚠️ ElevenLabs is not configured or keys are invalid. Falling back to Edge TTS.");
     return await generateEdgeTTS(text);
   }

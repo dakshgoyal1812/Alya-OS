@@ -42,7 +42,7 @@ export class DiscordBridge {
       console.log(`   ${SERVICE_CONNECT_MESSAGES.discord}`);
 
       // Set activity
-      c.user.setActivity("for messages | @Alya", {
+      c.user.setActivity("for messages | @Alisa", {
         type: ActivityType.Watching,
       });
     });

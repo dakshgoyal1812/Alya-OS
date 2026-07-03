@@ -56,6 +56,7 @@ async function main() {
     groq: existingConfig.groq || {},
     google: existingConfig.google || {},
     openrouter: existingConfig.openrouter || {},
+    nvidia: existingConfig.nvidia || {},
     email: existingConfig.email || {},
     elevenlabs: existingConfig.elevenlabs || {},
     spotify: existingConfig.spotify || {},
@@ -102,15 +103,16 @@ async function main() {
 
   // ── Step 1B: Free Thinking Models Setup ─────────────────────
   console.log(bold("\n  🧠 Step 1B: Configure Free High-Thinking Models (Optional)\n"));
-  console.log(d("  Alya can leverage Google Gemini and OpenRouter for free, deep-thinking reasoning."));
+  console.log(d("  Alya can leverage Google Gemini, OpenRouter, and NVIDIA NIM for free, deep-thinking reasoning."));
   console.log(d("  - Get a free Google Gemini key at: ") + b("https://aistudio.google.com/"));
-  console.log(d("  - Get a free OpenRouter key at:    ") + b("https://openrouter.ai/\n"));
+  console.log(d("  - Get a free OpenRouter key at:    ") + b("https://openrouter.ai/"));
+  console.log(d("  - Get an NVIDIA NIM key at:        ") + b("https://build.nvidia.com/\n"));
 
   const thinkingAnswers = await inquirer.prompt([
     {
       type: "confirm",
       name: "setupThinking",
-      message: r("✨") + " Would you like to configure Google Gemini or OpenRouter now?",
+      message: r("✨") + " Would you like to configure Gemini, OpenRouter, or NVIDIA NIM now?",
       default: true,
     },
     {
@@ -127,6 +129,13 @@ async function main() {
       default: config.openrouter.apiKey || undefined,
       when: (answers) => answers.setupThinking,
     },
+    {
+      type: "input",
+      name: "nvidiaKey",
+      message: r("✨") + " NVIDIA NIM API Key (press Enter to skip):",
+      default: config.nvidia.apiKey || undefined,
+      when: (answers) => answers.setupThinking,
+    },
   ]);
 
   if (thinkingAnswers.setupThinking) {
@@ -137,6 +146,10 @@ async function main() {
     if (thinkingAnswers.openrouterKey && thinkingAnswers.openrouterKey.trim()) {
       config.openrouter = { apiKey: thinkingAnswers.openrouterKey.trim() };
       console.log(g("  ✓ OpenRouter API Key Configured"));
+    }
+    if (thinkingAnswers.nvidiaKey && thinkingAnswers.nvidiaKey.trim()) {
+      config.nvidia = { apiKey: thinkingAnswers.nvidiaKey.trim() };
+      console.log(g("  ✓ NVIDIA NIM API Key Configured"));
     }
   }
 
@@ -330,6 +343,7 @@ async function main() {
   console.log(`  🧠 Groq AI: ${g(config.groq.model)}`);
   console.log(`  🧠 Google Gemini: ${config.google?.apiKey ? g("Configured") : d("Not Configured")}`);
   console.log(`  🧠 OpenRouter: ${config.openrouter?.apiKey ? g("Configured") : d("Not Configured")}`);
+  console.log(`  🧠 NVIDIA NIM: ${config.nvidia?.apiKey ? g("Configured") : d("Not Configured")}`);
   console.log(`  🌐 Web Dashboard: ${config.web.enabled ? g("Enabled") + d(` (port ${config.web.port})`) : r("Disabled")}`);
   console.log(`  💬 Discord: ${config.discord.enabled ? g("Enabled") : d("Disabled")}`);
   console.log(`  ✈️  Telegram: ${config.telegram.enabled ? g("Enabled") : d("Disabled")}`);

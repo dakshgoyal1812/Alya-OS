@@ -176,10 +176,25 @@ export class LLMEngine {
     const config = loadConfig();
 
     if (provider === "google") {
-      const apiKey = config.google?.apiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-      if (!apiKey || apiKey.startsWith("PASTE")) {
+      let keys = [];
+      if (config.google?.apiKeys) {
+        keys = config.google.apiKeys.filter(k => k && !k.startsWith("PASTE"));
+      }
+      if (keys.length === 0 && config.google?.apiKey && !config.google.apiKey.startsWith("PASTE")) {
+        keys = [config.google.apiKey];
+      }
+      const envKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+      if (keys.length === 0 && envKey) {
+        keys = [envKey];
+      }
+      if (keys.length === 0) {
         throw new Error("Google Gemini API key is missing. Please add it to config.json or set GEMINI_API_KEY.");
       }
+      
+      if (this._googleKeyIndex === undefined) this._googleKeyIndex = 0;
+      const index = this._googleKeyIndex % keys.length;
+      const apiKey = keys[index];
+
       return new OpenAI({
         apiKey: apiKey,
         baseURL: "https://generativelanguage.googleapis.com/v1beta/openai"
@@ -187,10 +202,25 @@ export class LLMEngine {
     }
 
     if (provider === "openrouter") {
-      const apiKey = config.openrouter?.apiKey || process.env.OPENROUTER_API_KEY;
-      if (!apiKey || apiKey.startsWith("PASTE")) {
+      let keys = [];
+      if (config.openrouter?.apiKeys) {
+        keys = config.openrouter.apiKeys.filter(k => k && !k.startsWith("PASTE"));
+      }
+      if (keys.length === 0 && config.openrouter?.apiKey && !config.openrouter.apiKey.startsWith("PASTE")) {
+        keys = [config.openrouter.apiKey];
+      }
+      const envKey = process.env.OPENROUTER_API_KEY;
+      if (keys.length === 0 && envKey) {
+        keys = [envKey];
+      }
+      if (keys.length === 0) {
         throw new Error("OpenRouter API key is missing. Please add it to config.json or set OPENROUTER_API_KEY.");
       }
+
+      if (this._openrouterKeyIndex === undefined) this._openrouterKeyIndex = 0;
+      const index = this._openrouterKeyIndex % keys.length;
+      const apiKey = keys[index];
+
       return new OpenAI({
         apiKey: apiKey,
         baseURL: "https://openrouter.ai/api/v1",
@@ -209,6 +239,32 @@ export class LLMEngine {
       return new OpenAI({
         apiKey: apiKey,
         baseURL: "https://api.openai.com/v1"
+      });
+    }
+
+    if (provider === "nvidia") {
+      let keys = [];
+      if (config.nvidia?.apiKeys) {
+        keys = config.nvidia.apiKeys.filter(k => k && !k.startsWith("PASTE"));
+      }
+      if (keys.length === 0 && config.nvidia?.apiKey && !config.nvidia.apiKey.startsWith("PASTE")) {
+        keys = [config.nvidia.apiKey];
+      }
+      const envKey = process.env.NVIDIA_API_KEY;
+      if (keys.length === 0 && envKey) {
+        keys = [envKey];
+      }
+      if (keys.length === 0) {
+        throw new Error("NVIDIA API key is missing. Please add it to config.json or set NVIDIA_API_KEY.");
+      }
+
+      if (this._nvidiaKeyIndex === undefined) this._nvidiaKeyIndex = 0;
+      const index = this._nvidiaKeyIndex % keys.length;
+      const apiKey = keys[index];
+
+      return new OpenAI({
+        apiKey: apiKey,
+        baseURL: "https://integrate.api.nvidia.com/v1"
       });
     }
 
@@ -250,6 +306,69 @@ export class LLMEngine {
     // All keys have been tried
     console.error(`❌ All ${this.apiKeys.length} API keys exhausted! No more backup keys available.`);
     this._triedKeys = null; // Reset for next cycle
+    return false;
+  }
+
+  _hasBackupKeys(provider) {
+    const config = loadConfig();
+    if (provider === "groq") {
+      return this.apiKeys.length > 1;
+    }
+    
+    let keys = [];
+    if (provider === "google") {
+      if (config.google?.apiKeys) keys = config.google.apiKeys.filter(k => k && !k.startsWith("PASTE"));
+      if (keys.length === 0 && config.google?.apiKey && !config.google.apiKey.startsWith("PASTE")) keys = [config.google.apiKey];
+    } else if (provider === "openrouter") {
+      if (config.openrouter?.apiKeys) keys = config.openrouter.apiKeys.filter(k => k && !k.startsWith("PASTE"));
+      if (keys.length === 0 && config.openrouter?.apiKey && !config.openrouter.apiKey.startsWith("PASTE")) keys = [config.openrouter.apiKey];
+    } else if (provider === "nvidia") {
+      if (config.nvidia?.apiKeys) keys = config.nvidia.apiKeys.filter(k => k && !k.startsWith("PASTE"));
+      if (keys.length === 0 && config.nvidia?.apiKey && !config.nvidia.apiKey.startsWith("PASTE")) keys = [config.nvidia.apiKey];
+    }
+    
+    return keys.length > 1;
+  }
+
+  _switchToNextKeyForProvider(provider) {
+    const config = loadConfig();
+    if (provider === "groq") {
+      return this._switchToNextKey();
+    }
+    
+    let keys = [];
+    if (provider === "google") {
+      if (config.google?.apiKeys) keys = config.google.apiKeys.filter(k => k && !k.startsWith("PASTE"));
+      if (keys.length === 0 && config.google?.apiKey && !config.google.apiKey.startsWith("PASTE")) keys = [config.google.apiKey];
+    } else if (provider === "openrouter") {
+      if (config.openrouter?.apiKeys) keys = config.openrouter.apiKeys.filter(k => k && !k.startsWith("PASTE"));
+      if (keys.length === 0 && config.openrouter?.apiKey && !config.openrouter.apiKey.startsWith("PASTE")) keys = [config.openrouter.apiKey];
+    } else if (provider === "nvidia") {
+      if (config.nvidia?.apiKeys) keys = config.nvidia.apiKeys.filter(k => k && !k.startsWith("PASTE"));
+      if (keys.length === 0 && config.nvidia?.apiKey && !config.nvidia.apiKey.startsWith("PASTE")) keys = [config.nvidia.apiKey];
+    }
+    
+    if (keys.length <= 1) return false;
+    
+    if (provider === "google") {
+      if (this._googleKeyIndex === undefined) this._googleKeyIndex = 0;
+      this._googleKeyIndex = (this._googleKeyIndex + 1) % keys.length;
+      console.log(`🔄 Switching to Google API key #${this._googleKeyIndex + 1}`);
+      return true;
+    }
+    if (provider === "openrouter") {
+      if (this._openrouterKeyIndex === undefined) this._openrouterKeyIndex = 0;
+      this._openrouterKeyIndex = (this._openrouterKeyIndex + 1) % keys.length;
+      console.log(`🔄 Switching to OpenRouter API key #${this._openrouterKeyIndex + 1}`);
+      return true;
+    }
+    if (provider === "nvidia") {
+      if (this._nvidiaKeyIndex === undefined) this._nvidiaKeyIndex = 0;
+      this._nvidiaKeyIndex = (this._nvidiaKeyIndex + 1) % keys.length;
+      console.log(`🔄 Switching to NVIDIA API key #${this._nvidiaKeyIndex + 1}`);
+      return true;
+    }
+    
     return false;
   }
 
@@ -411,8 +530,9 @@ User Level: ${data.level} (Streak: ${data.streak} Days)`;
       console.error(`Chat error [model=${model}, status=${errStatus}]: ${errMsg}`);
 
       // Try switching to backup key on quota/rate-limit errors
-      if (this._isQuotaError(error) && this._switchToNextKey()) {
-        console.warn(`⚠️ Quota hit on key ${this.currentKeyIndex}. Retrying with backup key...`);
+      const provider = this._getProviderForModel(model);
+      if (this._isQuotaError(error) && this._switchToNextKeyForProvider(provider)) {
+        console.warn(`⚠️ Quota hit on ${provider}. Retrying with backup key...`);
         return await this._processChat(messages, depth, useFallback);
       }
 
@@ -643,8 +763,9 @@ User Level: ${data.level} (Streak: ${data.streak} Days)`;
       console.error(`Stream error [model=${model}, status=${errStatus}]: ${errMsg}`);
 
       // Try switching to backup key on quota/rate-limit errors
-      if (this._isQuotaError(error) && this._switchToNextKey()) {
-        console.warn(`⚠️ Quota hit on key ${this.currentKeyIndex}. Retrying stream with backup key...`);
+      const provider = this._getProviderForModel(model);
+      if (this._isQuotaError(error) && this._switchToNextKeyForProvider(provider)) {
+        console.warn(`⚠️ Quota hit on ${provider}. Retrying stream with backup key...`);
         return await this._processChatStream(messages, onChunk, depth, useFallback);
       }
 
@@ -722,8 +843,9 @@ User Level: ${data.level} (Streak: ${data.streak} Days)`;
       return cleanResponse(response.choices[0].message.content) || getErrorMessage("llm_error");
     } catch (error) {
       // Try switching to backup key on quota/rate-limit errors
-      if (this._isQuotaError(error) && this._switchToNextKey()) {
-        console.warn(`⚠️ Quota hit. Retrying generate with backup key...`);
+      const provider = this._getProviderForModel(this.model);
+      if (this._isQuotaError(error) && this._switchToNextKeyForProvider(provider)) {
+        console.warn(`⚠️ Quota hit on ${provider}. Retrying generate with backup key...`);
         return await this.generate(prompt);
       }
       // Fallback to smaller model on token errors

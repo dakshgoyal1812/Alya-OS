@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Alya — Your private, local AI assistant with voice capabilities">
-  <title>✨ Alya — Your Local AI Assistant</title>
+  <meta name="description" content="Alisa — Your private, local AI assistant with voice capabilities">
+  <title>✨ Alisa — Your Local AI Assistant</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -35,10 +35,10 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="logo-container">
-          <img src="alya.png" alt="Alya" class="logo-img" id="logo-img">
+          <img src="alya.png" alt="Alisa" class="logo-img" id="logo-img">
           <div class="logo-glow"></div>
         </div>
-        <h1 class="logo-text">Alya</h1>
+        <h1 class="logo-text">Alisa</h1>
         <p class="logo-subtitle">Your Local AI Assistant</p>
       </div>
 
@@ -140,13 +140,16 @@
 
       <div class="sidebar-footer">
         <div class="voice-selector-container">
-          <label for="select-voice">🗣️ Alya's Voice:</label>
+          <label for="select-voice">🗣️ Alisa's Voice:</label>
           <select id="select-voice" class="voice-select">
-            <option value="9BWtsMINHqgu8Vj69vS2">Alya (Default Female)</option>
-            <option value="JBF274t2Wv783m58t8UP">Jarvis (British Male)</option>
-            <option value="EXAVITQu4vr4xnSDxMaL">Marcus (Deep Male)</option>
-            <option value="local-female">Local Female Fallback</option>
-            <option value="local-male">Local Male Fallback</option>
+            <option value="9BWtsMINHqgu8Vj69vS2">ElevenLabs: Alisa (Default Female)</option>
+            <option value="JBF274t2Wv783m58t8UP">ElevenLabs: Jarvis (British Male)</option>
+            <option value="EXAVITQu4vr4xnSDxMaL">ElevenLabs: Marcus (Deep Male)</option>
+            <option value="google-hindi">Google TTS: Hindi Female</option>
+            <option value="google-english">Google TTS: English Female</option>
+            <option value="edge-hindi">Edge TTS: Hindi Neural</option>
+            <option value="local-female">Local Browser: Female Fallback</option>
+            <option value="local-male">Local Browser: Male Fallback</option>
           </select>
         </div>
         <button class="btn-clear" id="btn-clear" title="Clear conversation">
@@ -171,7 +174,7 @@
         <div class="chat-header-info">
           <span class="chat-emoji">✨</span>
           <div>
-            <h2>Alya OS Control Center</h2>
+            <h2>Alisa OS Control Center</h2>
             <span class="chat-header-status" id="connection-status">Connecting...</span>
           </div>
         </div>
@@ -191,7 +194,7 @@
           <div class="control-select-group">
             <label for="select-persona">📱 App Agent:</label>
             <select id="select-persona" class="header-select">
-              <option value="normal">Default Alya</option>
+              <option value="normal">Default Alisa</option>
               <option value="coding">💻 Coding Agent</option>
               <option value="research">🔍 Research Agent</option>
               <option value="study">📚 Study Agent</option>
@@ -279,7 +282,7 @@
                 <div class="hologram-avatar" id="hologram-avatar">
                   <div class="video-call-frame">
                     <!-- Base Avatar Image -->
-                    <img src="alya.png" class="avatar-image-base" alt="Alya" />
+                    <img src="alya.png" class="avatar-image-base" alt="Alisa" />
                     
                     <!-- Blinking Eyelid Overlays -->
                     <div class="eyelid-overlay eye-left-lid"></div>
@@ -374,7 +377,7 @@
                 <!-- Welcome screen -->
                 <div class="welcome-screen" id="welcome-screen">
                   <div class="welcome-icon">✨</div>
-                  <h2>Alya OS</h2>
+                  <h2>Alisa OS</h2>
                   <p style="font-size: 0.95rem; color: var(--accent-300); font-weight: 500;">The Autonomous AI Workspace for Students & Creators</p>
                   <p>A unified private operating system running local sandboxes, memory storage, and voice systems on your device.</p>
                   
@@ -386,18 +389,18 @@
 
                   <p class="welcome-hint">Type a message or tap the mic below to begin your session.</p>
                   <div class="feature-chips">
-                    <button class="chip" data-prompt="Alya, check my computer's RAM, cores and OS info.">💻 System specs</button>
-                    <button class="chip" data-prompt="Alya, check the weather in New Delhi.">🌤️ Check Weather</button>
-                    <button class="chip" data-prompt="Alya, take a screenshot of https://news.ycombinator.com">📸 Screenshot site</button>
-                    <button class="chip" data-prompt="Alya, check the current price of Bitcoin.">🪙 Bitcoin price</button>
-                    <button class="chip" data-prompt="Alya, generate an image of a futuristic floating island.">🎨 Generate image</button>
-                    <button class="chip" data-prompt="Alya, what do you remember about me?">🧠 Recall memories</button>
-                    <button class="chip" data-prompt="Alya, scan my storage logical drives space.">💾 Storage space</button>
-                    <button class="chip" data-prompt="Alya, generate a QR Code for https://google.com">🔗 Make QR Code</button>
-                    <button class="chip" data-prompt="Alya, add a reminder to water the plants tomorrow at 9am.">⏰ Set reminder</button>
-                    <button class="chip" data-prompt="Alya, summarize this YouTube video: https://www.youtube.com/watch?v=jNQXAC9IVRw">🎥 YouTube summary</button>
-                    <button class="chip" data-prompt="Alya, run a system backup.">📦 System Backup</button>
-                    <button class="chip" data-prompt="Alya, execute python code to print the first 10 Fibonacci numbers.">🐍 Python Sandbox</button>
+                    <button class="chip" data-prompt="Alisa, check my computer's RAM, cores and OS info.">💻 System specs</button>
+                    <button class="chip" data-prompt="Alisa, check the weather in New Delhi.">🌤️ Check Weather</button>
+                    <button class="chip" data-prompt="Alisa, take a screenshot of https://news.ycombinator.com">📸 Screenshot site</button>
+                    <button class="chip" data-prompt="Alisa, check the current price of Bitcoin.">🪙 Bitcoin price</button>
+                    <button class="chip" data-prompt="Alisa, generate an image of a futuristic floating island.">🎨 Generate image</button>
+                    <button class="chip" data-prompt="Alisa, what do you remember about me?">🧠 Recall memories</button>
+                    <button class="chip" data-prompt="Alisa, scan my storage logical drives space.">💾 Storage space</button>
+                    <button class="chip" data-prompt="Alisa, generate a QR Code for https://google.com">🔗 Make QR Code</button>
+                    <button class="chip" data-prompt="Alisa, add a reminder to water the plants tomorrow at 9am.">⏰ Set reminder</button>
+                    <button class="chip" data-prompt="Alisa, summarize this YouTube video: https://www.youtube.com/watch?v=jNQXAC9IVRw">🎥 YouTube summary</button>
+                    <button class="chip" data-prompt="Alisa, run a system backup.">📦 System Backup</button>
+                    <button class="chip" data-prompt="Alisa, execute python code to print the first 10 Fibonacci numbers.">🐍 Python Sandbox</button>
                   </div>
                 </div>
               </div>
@@ -418,7 +421,7 @@
               <div class="workspace-tab-content">
                 <!-- Notes tab -->
                 <div id="w-notes" class="w-tab-pane active">
-                  <textarea id="workspace-notes" placeholder="Start typing your notes here Master... Alya will auto-save everything to your Second Brain."></textarea>
+                  <textarea id="workspace-notes" placeholder="Start typing your notes here Master... Alisa will auto-save everything to your Second Brain."></textarea>
                   <div class="notes-status" id="notes-status">Notes saved locally</div>
                 </div>
                 
@@ -428,7 +431,7 @@
                     <span>HTML/CSS/JS Playground</span>
                     <button class="btn-primary" id="btn-run-sandbox" style="padding: 2px 8px; font-size: 11px;">Run Code</button>
                   </div>
-                  <textarea id="sandbox-code" placeholder="<!-- Write your HTML/CSS/JS code here Master -->&#10;<h1>Hello Master!</h1>&#10;<p>Alya has generated this for you.</p>"></textarea>
+                  <textarea id="sandbox-code" placeholder="<!-- Write your HTML/CSS/JS code here Master -->&#10;<h1>Hello Master!</h1>&#10;<p>Alisa has generated this for you.</p>"></textarea>
                   <div class="sandbox-preview-container">
                     <iframe id="sandbox-preview-frame" sandbox="allow-scripts"></iframe>
                   </div>
@@ -446,7 +449,7 @@
                     <div class="progress-bar" style="margin-top: 5px;"><div id="lifeos-xp-fill" class="progress-fill" style="width: 0%;"></div></div>
                   </div>
                   
-                  <!-- Daily summary generated by Alya -->
+                  <!-- Daily summary generated by Alisa -->
                   <div class="ai-daily-summary-card">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
                       <h5>✨ AI Daily Summary & Optimize</h5>
@@ -495,7 +498,7 @@
                     <h4>🧠 Auto-Evolution Brain</h4>
                     <span class="healer-status-badge idle" id="healer-status-badge">System Idle</span>
                   </div>
-                  <p class="healer-desc">If a bug, exception, or runtime error occurs, Alya automatically uses LLM reasoning to debug, patch the file, and push the update to GitHub. 🚀</p>
+                  <p class="healer-desc">If a bug, exception, or runtime error occurs, Alisa automatically uses LLM reasoning to debug, patch the file, and push the update to GitHub. 🚀</p>
                   
                   <div class="healer-trigger-box">
                     <input type="text" id="healer-error-input" placeholder="Paste an error message or console log..." style="flex:1;" />
@@ -509,7 +512,7 @@
                       <span class="dot green"></span>
                       <span class="terminal-title">evolution_engine.log</span>
                     </div>
-                    <pre class="terminal-body" id="healer-logs">Alya Auto-Evolution Engine initialized...
+                    <pre class="terminal-body" id="healer-logs">Alisa Auto-Evolution Engine initialized...
 Waiting for exceptions or manual diagnostics...
 </pre>
                   </div>
@@ -819,7 +822,7 @@ Waiting for exceptions or manual diagnostics...
               <div class="creator-card" style="margin-top: 15px;">
                 <h4>🧬 Self-Evolving AI & Response Integrity</h4>
                 <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
-                  <span>Alya Response Confidence:</span>
+                  <span>Alisa Response Confidence:</span>
                   <span id="metric-confidence" style="font-weight: bold; color: #10b981;">98%</span>
                 </div>
                 <div class="progress-bar"><div id="metric-confidence-fill" class="progress-fill" style="width: 98%; background: #10b981;"></div></div>
@@ -1146,7 +1149,7 @@ Waiting for exceptions or manual diagnostics...
                   <h4>🏗️ The Pre-Mortem Machine</h4>
                   <div class="form-group">
                     <label>Enter planned project or relationship:</label>
-                    <input type="text" id="premortem-plan" placeholder="e.g. Shipping the Alya iOS application" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
+                    <input type="text" id="premortem-plan" placeholder="e.g. Shipping the Alisa iOS application" style="width: 100%; box-sizing: border-box; background: var(--bg-900); border: 1px solid var(--border-subtle); padding: 8px; border-radius: 6px; color: var(--text-200);">
                   </div>
                   <button class="btn-primary" id="btn-run-premortem" style="width: 100%; margin-top: 8px;">Run Failure Simulation</button>
                   <div id="premortem-output" class="console-box" style="margin-top: 10px; display: none;"></div>
@@ -1257,7 +1260,7 @@ Waiting for exceptions or manual diagnostics...
         </div>
 
         <div class="input-wrapper">
-          <textarea id="message-input" placeholder="Message Alya..." rows="1" autofocus></textarea>
+          <textarea id="message-input" placeholder="Message Alisa..." rows="1" autofocus></textarea>
           <div class="input-actions">
             <!-- Hidden Image File Input -->
             <input type="file" id="image-upload" accept="image/*" style="display: none;">
@@ -1302,12 +1305,12 @@ Waiting for exceptions or manual diagnostics...
         <button class="modal-close" id="btn-close-qr">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="modal-desc">Scan this QR code with WhatsApp on your phone to link Alya.</p>
+        <p class="modal-desc">Scan this QR code with WhatsApp on your phone to link Alisa.</p>
         <div class="qr-container">
           <img id="qr-image" src="" alt="WhatsApp QR Code" style="display: none;" />
           <div id="qr-status" class="qr-status-msg">Initializing WhatsApp. Please wait...</div>
         </div>
-        <p class="qr-note">Note: QR code will automatically load once ready. Scanning links Alya to your WhatsApp account.</p>
+        <p class="qr-note">Note: QR code will automatically load once ready. Scanning links Alisa to your WhatsApp account.</p>
       </div>
     </div>
   </div>

@@ -197,7 +197,7 @@
     
     currentAudio = new Audio(data.url);
     if (typeof voiceOrbController !== "undefined" && voiceOrbController.active) {
-      voiceOrbController.setState("speaking", "Alya speaking...");
+      voiceOrbController.setState("speaking", "Alisa speaking...");
     }
     setHologramState("talking");
     currentAudio.play().catch(e => console.error("Audio playback failed:", e));
@@ -432,6 +432,7 @@
       message: payloadMessage, 
       image: attachedImageBase64, 
       mimeType: attachedImageMime,
+      voiceId: document.getElementById("select-voice")?.value || null,
       options: options
     });
 
@@ -792,7 +793,7 @@
     isListening = false;
     voiceBtn.classList.remove("recording");
     voiceIndicator.classList.remove("active");
-    inputEl.placeholder = "Message Alya...";
+    inputEl.placeholder = "Message Alisa...";
     try { recognition.stop(); } catch {}
 
     // Stop wave visualizer
@@ -2235,7 +2236,7 @@
     div.style.color = "#a5f3fc";
     
     let preview = escapeHTML(clipboardContent.substring(0, 60) + "...");
-    div.innerHTML = `💡 **Clipboard Watcher**: Detected item: \`${preview}\`. <button id="btn-helper-ask" style="background:#06b6d4; border:none; padding:2px 8px; border-radius:4px; color:#000; font-size:10px; cursor:pointer;">Ask Alya to review this</button>`;
+    div.innerHTML = `💡 **Clipboard Watcher**: Detected item: \`${preview}\`. <button id="btn-helper-ask" style="background:#06b6d4; border:none; padding:2px 8px; border-radius:4px; color:#000; font-size:10px; cursor:pointer;">Ask Alisa to review this</button>`;
     
     container.appendChild(div);
     container.scrollTop = container.scrollHeight;
@@ -2258,7 +2259,7 @@
   setInterval(() => {
     idleTimer++;
     if (idleTimer === 30) {
-      // Proactive check-in from Alya
+      // Proactive check-in from Alisa
       socket.emit("chat", {
         message: "Hello Master, I noticed you have been idle. Is there any task or code review I can assist with? ✨",
         options: { isProactive: true }
@@ -3086,7 +3087,7 @@
         document.body.classList.add("decoy-active");
         showStatusNotification("🛡️ Decoy Safe Mode active. Standard chat environment loaded.");
         const alyaStatus = document.getElementById("routing-model");
-        if (alyaStatus) alyaStatus.textContent = "Alya Standard (Decoy)";
+        if (alyaStatus) alyaStatus.textContent = "Alisa Standard (Decoy)";
       } else {
         document.body.classList.remove("decoy-active");
         const alyaStatus = document.getElementById("routing-model");
@@ -3145,7 +3146,7 @@
     modal.style.display = "flex";
     qrImage.style.display = "none";
     qrStatus.style.display = "block";
-    qrStatus.textContent = "Requesting QR code from Alya bridge...";
+    qrStatus.textContent = "Requesting QR code from Alisa bridge...";
     
     pollQR();
     if (qrPollInterval) clearInterval(qrPollInterval);
@@ -3584,7 +3585,7 @@
   // Generate Daily Summary
   if (btnGenDailySummary && aiDailySummaryText) {
     btnGenDailySummary.addEventListener("click", async () => {
-      aiDailySummaryText.textContent = "Alya is analyzing your Second Brain memory files to optimize scheduling...";
+      aiDailySummaryText.textContent = "Alisa is analyzing your Second Brain memory files to optimize scheduling...";
       try {
         const res = await fetch("/api/life-os/summary", {
           method: "POST",
@@ -3753,7 +3754,7 @@
       if (isListening || isStreaming) return;
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         const transcript = event.results[i][0].transcript.toLowerCase();
-        if (transcript.includes("alya") || transcript.includes("alia") || transcript.includes("arya") || transcript.includes("halya")) {
+        if (transcript.includes("alisa") || transcript.includes("elisa") || transcript.includes("alissa") || transcript.includes("alya")) {
           console.log("🧬 Wake word detected!");
           triggerWakeWordActivation();
           break;

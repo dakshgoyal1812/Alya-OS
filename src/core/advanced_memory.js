@@ -25,16 +25,16 @@ export class AdvancedMemoryEngine {
       } else {
         this.db = {
           semanticFacts: [
-            { id: 1, text: "User's AI assistant name is Alya", timestamp: new Date().toISOString() }
+            { id: 1, text: "User's AI assistant name is Alisa", timestamp: new Date().toISOString() }
           ],
           habits: [
             { id: 1, habit: "User usually reviews system resource stats every afternoon", confidence: 0.85 },
             { id: 2, habit: "User prefers dark cyber neon colors for styling and UI layouts", confidence: 0.90 }
           ],
           relationships: [
-            { from: "User", relation: "Creator of", to: "Alya AI" },
-            { from: "Alya AI", relation: "Runs on", to: "Local Host OS" },
-            { from: "Alya AI", relation: "Uses", to: "Groq Cloud Llama 3" }
+            { from: "User", relation: "Creator of", to: "Alisa AI" },
+            { from: "Alisa AI", relation: "Runs on", to: "Local Host OS" },
+            { from: "Alisa AI", relation: "Uses", to: "Groq Cloud Llama 3" }
           ],
           emotionalState: {
             stress: 0.1,
@@ -44,7 +44,7 @@ export class AdvancedMemoryEngine {
             lastUpdated: new Date().toISOString()
           },
           temporalTimeline: [
-            { timestamp: new Date().toISOString(), event: "Alya Master Control Core upgraded to AI OS Suite" }
+            { timestamp: new Date().toISOString(), event: "Alisa Master Control Core upgraded to AI OS Suite" }
           ]
         };
         this._saveCognitiveDb();

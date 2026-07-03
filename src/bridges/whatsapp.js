@@ -2,9 +2,6 @@
 // ✨ WhatsApp Bridge — whatsapp-web.js with QR auth
 // ============================================================
 
-import pkg from "whatsapp-web.js";
-const { Client, LocalAuth, MessageMedia } = pkg;
-import qrcode from "qrcode-terminal";
 import { LLMEngine } from "../core/llm.js";
 import { getHistory, addMessage, clearHistory } from "../core/memory.js";
 import { SERVICE_CONNECT_MESSAGES } from "../core/personality.js";
@@ -25,65 +22,15 @@ export class WhatsAppBridge {
   }
 
   async start() {
-    if (process.env.RENDER === "true" || process.env.RENDER === true) {
-      console.warn("⚠️ WhatsApp Bridge: Auto-disabled on Render to prevent Puppeteer memory exhaustion (OOM) and missing dependency crashes.");
-      this.isReady = false;
-      return false;
-    }
-
-    try {
-      this.client = new Client({
-        authStrategy: new LocalAuth({ dataPath: join(__dirname, "..", "..", "data", "whatsapp-auth") }),
-        webVersionCache: {
-          type: "none"
-        },
-        puppeteer: { 
-          headless: true, 
-          executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (process.platform === "linux" ? "/usr/bin/google-chrome" : undefined),
-          args: [
-            "--no-sandbox", 
-            "--disable-setuid-sandbox", 
-            "--disable-gpu", 
-            "--disable-extensions", 
-            "--disable-dev-shm-usage",
-            "--no-zygote",
-            "--disable-software-rasterizer",
-            "--mute-audio",
-            "--no-first-run",
-            "--disable-background-networking",
-            "--disable-default-apps",
-            "--disable-sync",
-            "--disable-translate",
-            "--metrics-recording-only",
-            "--safebrowsing-disable-auto-update",
-            "--disable-client-side-phishing-detection",
-            "--disable-component-update",
-            "--disable-site-isolation-trials",
-            "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-          ] 
-        },
-      });
-
-      this.client.on("qr", (qr) => {
-        this.lastQR = qr; // Expose internally for API
-        if (this.qrCallback) this.qrCallback(qr);
-      });
-
-      this.client.on("ready", () => {
-        this.isReady = true;
-        console.log(`✨ WhatsApp: Connected! ${SERVICE_CONNECT_MESSAGES.whatsapp}`);
-      });
-      this.client.on("auth_failure", (msg) => { console.error("❌ WhatsApp auth failed:", msg); this.isReady = false; });
-      this.client.on("disconnected", () => { this.isReady = false; });
-      this.client.on("message", (msg) => this.handleMessage(msg));
-
-      console.log("✨ WhatsApp: Initializing...");
-      await this.client.initialize();
+    if (this.config.useCloudAPI) {
+      console.log("✨ WhatsApp: Configured for WhatsApp Business Cloud API.");
+      this.isReady = true;
       return true;
-    } catch (error) {
-      console.error("❌ WhatsApp failed:", error.message);
-      return false;
     }
+
+    console.warn("⚠️ WhatsApp Web (Puppeteer client) is BLOCKED. You must enable 'useCloudAPI': true in config.json to run WhatsApp.");
+    this.isReady = false;
+    return false;
   }
 
   async handleMessage(msg) {
@@ -92,11 +39,11 @@ export class WhatsAppBridge {
     
     let content = (msg.body || "").trim();
 
-    // Enforce "!alya" prefix
-    if (!content.toLowerCase().startsWith("!alya")) return;
+    // Enforce "!alisa" prefix
+    if (!content.toLowerCase().startsWith("!alisa")) return;
     
-    // Strip the "!alya" prefix for processing
-    content = content.slice(5).trim();
+    // Strip the "!alisa" prefix for processing
+    content = content.slice(6).trim();
 
     // Check if message has a media file attached
     if (msg.hasMedia) {
@@ -130,17 +77,17 @@ export class WhatsAppBridge {
     }
 
     if (!content) {
-      await msg.reply("✨ At your service! Type `!alya help` to see what I can do.");
+      await msg.reply("✨ At your service! Type `!alisa help` to see what I can do.");
       return;
     }
 
     const chatId = msg.from;
 
     if (content.toLowerCase() === "clear") { clearHistory("whatsapp", chatId); await msg.reply("✨ Memory cleared!"); return; }
-    if (content.toLowerCase() === "help") { await msg.reply("✨ *Alya*\nCommands:\n- !alya <your message>\n- !alya clear\n- !alya status"); return; }
+    if (content.toLowerCase() === "help") { await msg.reply("✨ *Alisa*\nCommands:\n- !alisa <your message>\n- !alisa clear\n- !alisa status"); return; }
     if (content.toLowerCase() === "status") { 
       const groqOk = await this.llm.isAvailable();
-      await msg.reply(`✨ *Alya Status*\n\n🧠 Brain (Groq API): ${groqOk ? "✅ Online" : "❌ Offline"}\n📡 WhatsApp: ✅ Connected\n🔒 Privacy: 100% Local`); 
+      await msg.reply(`✨ *Alisa Status*\n\n🧠 Brain (Groq API): ${groqOk ? "✅ Online" : "❌ Offline"}\n📡 WhatsApp: ✅ Connected\n🔒 Privacy: 100% Local`); 
       return; 
     }
 
@@ -202,5 +149,90 @@ export class WhatsAppBridge {
 
   onQR(callback) { this.qrCallback = callback; }
   getStatus() { return { platform: "whatsapp", connected: this.isReady }; }
-  async stop() { if (this.client) { await this.client.destroy(); this.isReady = false; } }
+  async stop() { 
+    if (this.config.useCloudAPI) {
+      this.isReady = false;
+      return;
+    }
+    if (this.client) { 
+      await this.client.destroy(); 
+      this.isReady = false; 
+    } 
+  }
+
+  async sendCloudTextMessage(to, text) {
+    const phoneNumberId = this.config.phoneNumberId;
+    const accessToken = this.config.accessToken;
+    
+    if (!phoneNumberId || !accessToken) {
+      console.error("❌ WhatsApp Cloud API: phoneNumberId or accessToken is missing in config!");
+      return false;
+    }
+
+    try {
+      const url = `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          recipient_type: "individual",
+          to: to,
+          type: "text",
+          text: {
+            body: text
+          }
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        console.error("❌ WhatsApp Cloud API send failed:", data);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("❌ WhatsApp Cloud API send error:", err.message);
+      return false;
+    }
+  }
+
+  async handleCloudMessage(from, body, contactName) {
+    console.log(`📩 WhatsApp Cloud: Message from ${contactName} (${from}): ${body}`);
+    const sessionId = `whatsapp_${from}`;
+
+    // Get chat history
+    const history = getHistory("whatsapp", sessionId);
+    
+    // Add user message
+    addMessage("whatsapp", sessionId, "user", body);
+    history.push({ role: "user", content: body });
+
+    // Generate AI response
+    try {
+      const response = await this.llm.chat(history, body);
+      
+      // Add assistant message to history
+      addMessage("whatsapp", sessionId, "assistant", response);
+
+      // Clean <voice> tags
+      let cleanResponse = response;
+      const voiceMatch = response.match(/<voice>([\s\S]*?)<\/voice>/i);
+      if (voiceMatch) {
+        cleanResponse = response.replace(/<voice>[\s\S]*?<\/voice>/gi, "").trim();
+        if (!cleanResponse) {
+          cleanResponse = voiceMatch[1].trim();
+        }
+      }
+
+      // Send via Cloud API
+      await this.sendCloudTextMessage(from, cleanResponse);
+    } catch (err) {
+      console.error("❌ WhatsApp Cloud response generation failed:", err.message);
+      await this.sendCloudTextMessage(from, "⚠️ Sorry, I encountered a temporary error processing that.");
+    }
+  }
 }

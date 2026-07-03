@@ -45,12 +45,23 @@ const DEFAULT_CONFIG = {
   },
   whatsapp: {
     enabled: false,
+    useCloudAPI: false,
+    accessToken: "",
+    phoneNumberId: "",
+    appSecret: "",
+    webhookVerifyToken: "alisa_token",
   },
   google: {
     apiKey: "",
+    apiKeys: [],
   },
   openrouter: {
     apiKey: "",
+    apiKeys: [],
+  },
+  nvidia: {
+    apiKey: "",
+    apiKeys: [],
   },
 };
 
@@ -62,6 +73,26 @@ let cachedConfig = null;
  */
 export function loadConfig() {
   if (cachedConfig) return cachedConfig;
+
+  // Parse local .env manually if it exists
+  try {
+    const envPath = join(process.cwd(), ".env");
+    if (existsSync(envPath)) {
+      const envContent = readFileSync(envPath, "utf-8");
+      for (const line of envContent.split("\n")) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("#")) continue;
+        const parts = trimmed.split("=");
+        if (parts.length >= 2) {
+          const key = parts[0].trim();
+          const value = parts.slice(1).join("=").trim().replace(/^['"]|['"]$/g, "");
+          process.env[key] = value;
+        }
+      }
+    }
+  } catch (e) {
+    // Ignore
+  }
 
   try {
     if (existsSync(CONFIG_PATH)) {
@@ -150,13 +181,73 @@ export function loadConfig() {
     // Google / Gemini Env Variables
     if (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY) {
       if (!cachedConfig.google) cachedConfig.google = {};
-      cachedConfig.google.apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+      const envKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+      if (envKey.includes(",")) {
+        cachedConfig.google.apiKeys = envKey.split(",").map(k => k.trim()).filter(Boolean);
+        cachedConfig.google.apiKey = cachedConfig.google.apiKeys[0];
+      } else {
+        cachedConfig.google.apiKey = envKey;
+      }
     }
 
     // OpenRouter Env Variables
     if (process.env.OPENROUTER_API_KEY) {
       if (!cachedConfig.openrouter) cachedConfig.openrouter = {};
-      cachedConfig.openrouter.apiKey = process.env.OPENROUTER_API_KEY;
+      if (process.env.OPENROUTER_API_KEY.includes(",")) {
+        cachedConfig.openrouter.apiKeys = process.env.OPENROUTER_API_KEY.split(",").map(k => k.trim()).filter(Boolean);
+        cachedConfig.openrouter.apiKey = cachedConfig.openrouter.apiKeys[0];
+      } else {
+        cachedConfig.openrouter.apiKey = process.env.OPENROUTER_API_KEY;
+      }
+    }
+
+    // Nvidia Env Variables
+    if (process.env.NVIDIA_API_KEY) {
+      if (!cachedConfig.nvidia) cachedConfig.nvidia = {};
+      if (process.env.NVIDIA_API_KEY.includes(",")) {
+        cachedConfig.nvidia.apiKeys = process.env.NVIDIA_API_KEY.split(",").map(k => k.trim()).filter(Boolean);
+        cachedConfig.nvidia.apiKey = cachedConfig.nvidia.apiKeys[0];
+      } else {
+        cachedConfig.nvidia.apiKey = process.env.NVIDIA_API_KEY;
+      }
+    }
+
+    // Spotify Env Variables
+    if (process.env.SPOTIFY_CLIENT_ID) {
+      if (!cachedConfig.spotify) cachedConfig.spotify = {};
+      cachedConfig.spotify.clientId = process.env.SPOTIFY_CLIENT_ID;
+    }
+
+    // Twitter Env Variables
+    if (process.env.TWITTER_API_KEY) {
+      if (!cachedConfig.twitter) cachedConfig.twitter = {};
+      cachedConfig.twitter.apiKey = process.env.TWITTER_API_KEY;
+    }
+
+    // Instagram Env Variables
+    if (process.env.INSTAGRAM_ACCESS_TOKEN) {
+      if (!cachedConfig.instagram) cachedConfig.instagram = {};
+      cachedConfig.instagram.accessToken = process.env.INSTAGRAM_ACCESS_TOKEN;
+    }
+
+    // WhatsApp Cloud API Env Variables
+    if (process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN) {
+      if (!cachedConfig.whatsapp) cachedConfig.whatsapp = {};
+      cachedConfig.whatsapp.accessToken = process.env.META_ACCESS_TOKEN || process.env.WHATSAPP_ACCESS_TOKEN;
+      cachedConfig.whatsapp.enabled = true;
+      cachedConfig.whatsapp.useCloudAPI = true;
+    }
+    if (process.env.META_PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_NUMBER_ID) {
+      if (!cachedConfig.whatsapp) cachedConfig.whatsapp = {};
+      cachedConfig.whatsapp.phoneNumberId = process.env.META_PHONE_NUMBER_ID || process.env.WHATSAPP_PHONE_NUMBER_ID;
+    }
+    if (process.env.META_APP_SECRET || process.env.WHATSAPP_APP_SECRET) {
+      if (!cachedConfig.whatsapp) cachedConfig.whatsapp = {};
+      cachedConfig.whatsapp.appSecret = process.env.META_APP_SECRET || process.env.WHATSAPP_APP_SECRET;
+    }
+    if (process.env.META_VERIFY_TOKEN || process.env.WHATSAPP_VERIFY_TOKEN) {
+      if (!cachedConfig.whatsapp) cachedConfig.whatsapp = {};
+      cachedConfig.whatsapp.webhookVerifyToken = process.env.META_VERIFY_TOKEN || process.env.WHATSAPP_VERIFY_TOKEN;
     }
     
   } catch (error) {
