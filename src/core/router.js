@@ -80,7 +80,7 @@ export const MODEL_DIRECTORY = {
     description: "DeepSeek model hosted on OpenRouter gateway."
   },
   "gemini-thinking": {
-    name: "gemini-2.0-flash-thinking-exp-01-21",
+    name: "gemini-2.0-flash",
     provider: "google",
     type: "reasoning",
     cost: 0.0,
