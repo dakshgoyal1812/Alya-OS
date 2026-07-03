@@ -218,14 +218,17 @@ export class WhatsAppBridge {
       // Add assistant message to history
       addMessage("whatsapp", sessionId, "assistant", response);
 
-      // Clean <voice> tags
+      // Clean <voice> and <media> tags
       let cleanResponse = response;
       const voiceMatch = response.match(/<voice>([\s\S]*?)<\/voice>/i);
-      if (voiceMatch) {
-        cleanResponse = response.replace(/<voice>[\s\S]*?<\/voice>/gi, "").trim();
-        if (!cleanResponse) {
-          cleanResponse = voiceMatch[1].trim();
-        }
+      
+      cleanResponse = cleanResponse
+        .replace(/<voice>[\s\S]*?<\/voice>/gi, "")
+        .replace(/<media>[\s\S]*?<\/media>/gi, "")
+        .trim();
+        
+      if (!cleanResponse && voiceMatch) {
+        cleanResponse = voiceMatch[1].trim();
       }
 
       // Send via Cloud API
