@@ -300,7 +300,7 @@ export class ModelRouter {
       if (hasKey) isAvailable = true;
     }
     
-    if (key.provider === "ollama" && config.ollama?.enabled) isAvailable = true;
+    if (key.provider === "ollama" && config.ollama?.enabled && process.env.RENDER !== "true") isAvailable = true;
 
     if (isAvailable) {
       return preferredKey;

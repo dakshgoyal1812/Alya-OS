@@ -23,9 +23,9 @@ if (!existsSync(DATA_DIR)) {
 const conversations = new Map();
 
 /**
- * Maximum messages to keep per conversation
+ * Maximum messages to keep per conversation (reduced on Render to fit 512MB RAM)
  */
-const MAX_HISTORY = 100;
+const MAX_HISTORY = process.env.RENDER === "true" ? 20 : 100;
 
 /**
  * Get the file path for a conversation
